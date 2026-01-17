@@ -1,0 +1,30 @@
+{
+  "name": "pulsar-web",
+  "version": "1.0.0",
+  "description": "Web client for Pulsar Messenger",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pulsar-chat/pulsar-web.git"
+  },
+  "keywords": [
+    "pulsar",
+    "typescript",
+    "websocket"
+  ],
+  "author": "MalyshevMS, rewnant",
+  "license": "SEE LICENSE IN LICENSE",
+  "bugs": {
+    "url": "https://github.com/pulsar-chat/pulsar-web/issues"
+  },
+  "homepage": "https://github.com/pulsar-chat/pulsar-web#readme",
+  "dependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}
