@@ -1,0 +1,251 @@
+/* =========================
+   CSS Variables (Theme)
+   ========================= */
+
+:root {
+    --color-bg: #0f1220;
+    --color-bg-soft: #171a2d;
+    --color-primary: #6c7cff;
+    --color-primary-hover: #5b6cf0;
+    --color-text: #e6e8f0;
+    --color-text-muted: #a5a8c0;
+    --color-border: #2a2e4a;
+
+    --radius: 12px;
+    --radius-sm: 8px;
+
+    --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* =========================
+   Base
+   ========================= */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-main);
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.container {
+    max-width: 1200px;
+    padding: 0 24px;
+    margin: 0 auto;
+}
+
+/* =========================
+   Header
+   ========================= */
+
+.header {
+    border-bottom: 1px solid var(--color-border);
+    background: rgba(15, 18, 32, 0.8);
+    backdrop-filter: blur(8px);
+}
+
+.header__content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 72px;
+}
+
+.header__logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.4rem;
+    font-weight: 600;
+    width: 10%;
+    gap: 2px;
+}
+
+.header__logo_img {
+    width: 100%;
+}
+
+.header__nav {
+    display: flex;
+    gap: 24px;
+}
+
+.nav__link {
+    color: var(--color-text-muted);
+}
+
+.nav__link:hover {
+    color: var(--color-text);
+}
+
+.header__actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* =========================
+   Buttons
+   ========================= */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+
+.btn--primary {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+.btn--primary:hover {
+    background: var(--color-primary-hover);
+}
+
+.btn--secondary {
+    border-color: var(--color-border);
+    background: transparent;
+}
+
+.btn--ghost {
+    background: transparent;
+    color: var(--color-text-muted);
+}
+
+.btn--large {
+    padding: 14px 24px;
+    font-size: 1rem;
+}
+
+/* =========================
+   Hero
+   ========================= */
+
+.hero {
+    padding: 96px 0;
+}
+
+.hero__content {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 64px;
+    align-items: center;
+}
+
+.hero__title {
+    font-size: 3rem;
+    line-height: 1.2;
+    margin-bottom: 24px;
+}
+
+.hero__subtitle {
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    margin-bottom: 32px;
+}
+
+.hero__actions {
+    display: flex;
+    gap: 16px;
+}
+
+/* Mockup */
+
+.mockup {
+    background: var(--color-bg-soft);
+    border-radius: var(--radius);
+    padding: 24px;
+    border: 1px solid var(--color-border);
+}
+
+.mockup__screen {
+    width: 100%;
+    height: 320px;
+    background: linear-gradient(
+        135deg,
+        #2b2f55,
+        #1b1f3b
+    );
+    border-radius: var(--radius-sm);
+}
+
+/* =========================
+   Features
+   ========================= */
+
+.features {
+    padding: 80px 0;
+    background: var(--color-bg-soft);
+}
+
+.section-title {
+    font-size: 2rem;
+    margin-bottom: 48px;
+    text-align: center;
+}
+
+.features__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.feature-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 24px;
+}
+
+.feature-card__title {
+    margin-bottom: 12px;
+    font-size: 1.2rem;
+}
+
+.feature-card__text {
+    color: var(--color-text-muted);
+}
+
+/* =========================
+   Footer
+   ========================= */
+
+.footer {
+    border-top: 1px solid var(--color-border);
+    padding: 32px 0;
+}
+
+.footer__content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer__nav {
+    display: flex;
+    gap: 16px;
+}
+
+.footer__nav a {
+    color: var(--color-text-muted);
+}
+
+.footer__nav a:hover {
+    color: var(--color-text);
+}
