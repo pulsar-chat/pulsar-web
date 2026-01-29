@@ -10,3 +10,11 @@ pws.connect();
 pws.onOpen = () => {
     pws.send("Hello, World!");
 }
+
+pws.onMessage  = (m) => {
+    const message = Message.fromPayload(m)
+
+    if (message.getSender().startsWith("!server")) {
+        // парсинг ответа от сервера
+    }
+}

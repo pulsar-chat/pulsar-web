@@ -68,7 +68,7 @@ class Message {
         return message.toPayload();
     }
 
-    fromPayload(payload: string): Message {
+    static fromPayload(payload: string): Message {
         const idStr = removeSpaces(payload.slice(0, PULSAR_ID_SIZE));
         const timeStr = removeSpaces(payload.slice(PULSAR_ID_SIZE, PULSAR_ID_SIZE + PULSAR_TIME_SIZE));
         const senderStr = removeSpaces(payload.slice(PULSAR_ID_SIZE + PULSAR_TIME_SIZE, PULSAR_ID_SIZE + PULSAR_TIME_SIZE + PULSAR_SRC_SIZE));
