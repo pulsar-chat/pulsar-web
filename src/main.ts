@@ -10,9 +10,10 @@ const cli = new PulsarClient("@ra", pulsarURL);
 
 cli.connect();
 
-cli.onOpen = () => {
+cli.onOpen = async () => {
     console.log("Connect!");
-    cli.requestRaw("!ping");
+    const rsp =  await cli.requestRaw("!ping");
+    console.log(rsp);
 };
 
 cli.onMessage = (msg: Message) => {
