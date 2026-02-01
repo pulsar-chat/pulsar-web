@@ -12,7 +12,7 @@ cli.connect();
 
 cli.onOpen = async () => {
     console.log("Connect!");
-    const rsp =  await cli.requestRaw("!ping");
+    const rsp = await cli.requestRaw("!ping");
     console.log(rsp);
 };
 
