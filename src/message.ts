@@ -1,4 +1,4 @@
-
+import * as def from "./defines"
 
 function stringify(arg: unknown): string {
     return String(arg);
@@ -24,9 +24,9 @@ class Message {
     private content: string;
     private receiver: string;
     private sender: string;
-    private timestamp: Date;
+    private timestamp: number;
 
-    constructor(id: number, content: string, receiver: string, sender: string, timestamp: Date) {
+    constructor(id: number, content: string, receiver: string, sender: string, timestamp: number) {
         this.id = id;
         this.content = content;
         this.receiver = receiver;
@@ -37,7 +37,7 @@ class Message {
         return this.id;
     }
 
-    getTime(): Date {
+    getTime(): number {
         return this.timestamp;
     }
 
@@ -45,7 +45,7 @@ class Message {
         return this.sender;
     }
 
-    getRec(): string {
+    getReciever(): string {
         return this.receiver;
     }
 
@@ -56,10 +56,10 @@ class Message {
 
     toPayload(): string {
         let payload = "";
-        payload += alignRight(PULSAR_ID_SIZE, this.id, "0");
-        payload += alignRight(PULSAR_TIME_SIZE, this.timestamp, "0");
-        payload += alignRight(PULSAR_SRC_SIZE, this.sender);
-        payload += alignRight(PULSAR_DST_SIZE, this.receiver);
+        payload += alignRight(def.PULSAR_ID_SIZE, this.id, "0");
+        payload += alignRight(def.PULSAR_TIME_SIZE, this.timestamp, "0");
+        payload += alignRight(def.PULSAR_SRC_SIZE, this.sender);
+        payload += alignRight(def.PULSAR_DST_SIZE, this.receiver);
         payload += this.content;
         return payload;
     }
@@ -69,13 +69,15 @@ class Message {
     }
 
     static fromPayload(payload: string): Message {
-        const idStr = removeSpaces(payload.slice(0, PULSAR_ID_SIZE));
-        const timeStr = removeSpaces(payload.slice(PULSAR_ID_SIZE, PULSAR_ID_SIZE + PULSAR_TIME_SIZE));
-        const senderStr = removeSpaces(payload.slice(PULSAR_ID_SIZE + PULSAR_TIME_SIZE, PULSAR_ID_SIZE + PULSAR_TIME_SIZE + PULSAR_SRC_SIZE));
-        const receiverStr = removeSpaces(payload.slice(PULSAR_ID_SIZE + PULSAR_TIME_SIZE + PULSAR_SRC_SIZE, PULSAR_ID_SIZE + PULSAR_TIME_SIZE + PULSAR_SRC_SIZE + PULSAR_DST_SIZE));
-        const contentStr = payload.slice(PULSAR_ID_SIZE + PULSAR_TIME_SIZE + PULSAR_SRC_SIZE + PULSAR_DST_SIZE);
+        const idStr = removeSpaces(payload.slice(0, def.PULSAR_ID_SIZE));
+        const timeStr = removeSpaces(payload.slice(def.PULSAR_ID_SIZE, def.PULSAR_ID_SIZE + def.PULSAR_TIME_SIZE));
+        const senderStr = removeSpaces(payload.slice(def.PULSAR_ID_SIZE + def.PULSAR_TIME_SIZE, def.PULSAR_ID_SIZE + def.PULSAR_TIME_SIZE + def.PULSAR_SRC_SIZE));
+        const receiverStr = removeSpaces(payload.slice(def.PULSAR_ID_SIZE + def.PULSAR_TIME_SIZE + def.PULSAR_SRC_SIZE, def.PULSAR_ID_SIZE + def.PULSAR_TIME_SIZE + def.PULSAR_SRC_SIZE + def.PULSAR_DST_SIZE));
+        const contentStr = payload.slice(def.PULSAR_ID_SIZE + def.PULSAR_TIME_SIZE + def.PULSAR_SRC_SIZE + def.PULSAR_DST_SIZE);
         const id = parseInt(idStr, 10);
-        const timestamp = new Date(parseInt(timeStr, 10));
+        const timestamp = parseInt(timeStr, 10);
         return new Message(id, contentStr, receiverStr, senderStr, timestamp);
     }
 }
+
+export default Message

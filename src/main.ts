@@ -1,20 +1,26 @@
 import PulsarWebSocket from "./websocket/pulsar";
+import Message from "./message";
+import { PulsarClient } from "./client";
 
 console.log("Hello, World!");
 
-const pwsURL = 'ws://212.113.98.14:8080';
-const pws = new PulsarWebSocket(pwsURL);
+const pulsarURL = 'ws://212.113.98.14:8080';
 
-pws.connect();
+const cli = new PulsarClient("@ra", pulsarURL);
 
-pws.onOpen = () => {
-    pws.send("Hello, World!");
-}
+cli.connect();
 
-pws.onMessage  = (m) => {
-    const message = Message.fromPayload(m)
+cli.onOpen = () => {
+    console.log("Connect!");
+    cli.requestRaw("!ping");
+};
 
-    if (message.getSender().startsWith("!server")) {
-        // парсинг ответа от сервера
-    }
-}
+cli.onMessage = (msg: Message) => {
+    console.log(`New message:
+        id: ${msg.getId()}
+        time: ${msg.getTime()}
+        src: ${msg.getSender()}
+        dst: ${msg.getReciever()}
+        msg: ${msg.getContent()}
+    `);
+};
