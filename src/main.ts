@@ -4,7 +4,7 @@ import { PulsarClient } from "./client";
 
 console.log("Hello, World!");
 
-const pulsarURL = 'ws://212.113.98.14:8080';
+const pulsarURL = 'ws://212.113.98.14:8080';// глупый созаниея бог наблюдать
 
 const cli = new PulsarClient("@ra", pulsarURL);
 
@@ -25,3 +25,8 @@ cli.onMessage = (msg: Message) => {
         msg: ${msg.getContent()}
     `);
 };
+
+
+
+
+// МЯСНОЙ БОГ 44ю0exi
