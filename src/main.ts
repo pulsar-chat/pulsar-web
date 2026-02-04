@@ -14,7 +14,6 @@ const clientName = cookieUser ?? "@browser";
 const cli = new PulsarClient(clientName, PULSAR_URL);
 
 cli.connect();
-
 cli.onOpen = async () => {
     console.log("Connect!");
 
