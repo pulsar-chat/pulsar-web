@@ -7,6 +7,7 @@ export default defineConfig({
             input: {
                 main: resolve(__dirname, 'index.html'),
                 register: resolve(__dirname, 'register.html'),
+                login: resolve(__dirname, 'login.html'),
                 client: resolve(__dirname, 'client.html'),
             }
         }
