@@ -21,6 +21,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('login-form') as HTMLFormElement | null;
     if (!form) return;
 
+    const uname_html = document.getElementById('login-username') as HTMLInputElement;
+    uname_html.addEventListener("input", () => {
+        if (uname_html.value[0] !== '@') uname_html.value = `@${uname_html.value}`;
+    });
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         showMessage('Вход...');

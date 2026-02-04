@@ -31,6 +31,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('reg-form') as HTMLFormElement | null;
     if (!form) return;
 
+    const uname_html = document.getElementById('username') as HTMLInputElement;
+    uname_html.addEventListener("input", () => {
+        if (uname_html.value[0] !== '@') uname_html.value = `@${uname_html.value}`;
+    });
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         showMessage('Регистрация...');
