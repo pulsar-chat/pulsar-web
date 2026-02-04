@@ -7,8 +7,34 @@
     <link rel="stylesheet" href="styles/register.css">
 </head>
 <body>
-    Pulsar Регистрация
+    <div class="register">
+        <form id="reg-form" class="register__form register__form--active">
+            <h1>Регистрация</h1>
 
-    <!-- TODO: прикрепить скрипт регистрации -->
+            <label>
+                <span>Имя пользователя</span>
+                <input id="username" type="text" placeholder="@username" required maxlength="32">
+            </label>
+
+            <label>
+                <span>Пароль</span>
+                <input id="password" type="password" placeholder="Пароль" required minlength="2">
+            </label>
+
+            <label>
+                <span>Повторите пароль</span>
+                <input id="password2" type="password" placeholder="Повторите пароль" required minlength="2">
+            </label>
+
+            <button type="submit" class="btn">Зарегистрироваться</button>
+            <div id="reg-message" class="register__message" aria-live="polite"></div>
+
+            <p style="text-align: center; margin-top: 16px; color: #666; font-size: 14px;">
+                Уже есть аккаунт? <a href="/login" style="color: #2a7ae2; text-decoration: none;">Войти</a>
+            </p>
+        </form>
+    </div>
+
+    <script type="module" src="/src/register.ts"></script>
 </body>
 </html>
