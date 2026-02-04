@@ -9,11 +9,20 @@ body { font-family: Inter, Arial, sans-serif; }
   background: #fff;
 }
 
+.register__tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid #ddd; }
+.register__tab { 
+  flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; 
+  color: #999; font-size: 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.register__tab--active { color: #2a7ae2; border-bottom-color: #2a7ae2; }
+
 .register h1 { margin: 0 0 18px 0; font-size: 22px; }
-.register__form label { display:block; margin-bottom:12px; }
-.register__form span { display:block; margin-bottom:6px; color:#333; font-size:14px; }
-.register__form input { width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; }
-.register__actions { display:flex; gap:12px; align-items:center; margin-top:12px; }
-.btn { padding:8px 12px; border-radius:6px; border: none; background:#2a7ae2; color:#fff; cursor:pointer }
-.btn--ghost { background:transparent; color:#2a7ae2; text-decoration:underline }
-.register__message { margin-top:12px; min-height:20px }
+
+.register__form { display: none; }
+.register__form--active { display: block; }
+
+.register__form label { display: block; margin-bottom: 12px; }
+.register__form span { display: block; margin-bottom: 6px; color: #333; font-size: 14px; }
+.register__form input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+.register__form button { width: 100%; padding: 10px; margin-top: 12px; border-radius: 6px; border: none; background: #2a7ae2; color: #fff; cursor: pointer; font-size: 14px; }
+.register__message { margin-top: 12px; min-height: 20px; font-size: 13px; }

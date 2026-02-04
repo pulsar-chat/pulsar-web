@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulsar Вход</title>
+    <link rel="stylesheet" href="styles/register.css">
+</head>
+<body>
+    <div class="register">
+        <form id="login-form" class="register__form register__form--active">
+            <h1>Вход</h1>
+
+            <label>
+                <span>Имя пользователя</span>
+                <input id="login-username" type="text" placeholder="@username" required>
+            </label>
+
+            <label>
+                <span>Пароль</span>
+                <input id="login-password" type="password" placeholder="Пароль" required>
+            </label>
+
+            <button type="submit" class="btn">Войти</button>
+            <div id="login-message" class="register__message" aria-live="polite"></div>
+
+            <p style="text-align: center; margin-top: 16px; color: #666; font-size: 14px;">
+                Нет аккаунта? <a href="/register" style="color: #2a7ae2; text-decoration: none;">Зарегистрироваться</a>
+            </p>
+        </form>
+    </div>
+
+    <script type="module" src="/src/login.ts"></script>
+</body>
+</html>

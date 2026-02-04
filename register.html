@@ -8,9 +8,9 @@
 </head>
 <body>
     <div class="register">
-        <h1>Регистрация</h1>
+        <form id="reg-form" class="register__form register__form--active">
+            <h1>Регистрация</h1>
 
-        <form id="reg-form" class="register__form">
             <label>
                 <span>Имя пользователя</span>
                 <input id="username" type="text" placeholder="@username" required maxlength="32">
@@ -18,20 +18,20 @@
 
             <label>
                 <span>Пароль</span>
-                <input id="password" type="password" placeholder="Пароль" required minlength="6">
+                <input id="password" type="password" placeholder="Пароль" required minlength="2">
             </label>
 
             <label>
                 <span>Повторите пароль</span>
-                <input id="password2" type="password" placeholder="Повторите пароль" required minlength="6">
+                <input id="password2" type="password" placeholder="Повторите пароль" required minlength="2">
             </label>
 
-            <div class="register__actions">
-                <button type="submit" class="btn">Зарегистрироваться</button>
-                <a href="/client" class="btn btn--ghost">Войти</a>
-            </div>
-
+            <button type="submit" class="btn">Зарегистрироваться</button>
             <div id="reg-message" class="register__message" aria-live="polite"></div>
+
+            <p style="text-align: center; margin-top: 16px; color: #666; font-size: 14px;">
+                Уже есть аккаунт? <a href="/login" style="color: #2a7ae2; text-decoration: none;">Войти</a>
+            </p>
         </form>
     </div>
 

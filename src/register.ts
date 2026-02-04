@@ -2,12 +2,6 @@ import { PulsarClient } from "./client";
 import { PULSAR_URL } from "./config";
 import { setCookie } from "./cookie";
 
-function $(s: string): HTMLElement {
-    const el = document.querySelector(s);
-    if (!el) throw new Error(`Element ${s} not found`);
-    return el as HTMLElement;
-}
-
 async function sha256Hex(message: string): Promise<string> {
     const enc = new TextEncoder();
     const data = enc.encode(message);
@@ -51,8 +45,8 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (pass.length < 6) {
-            showMessage('Пароль должен быть не менее 6 символов', true);
+        if (pass.length < 2) {
+            showMessage('Пароль должен быть не менее 2 символов', true);
             return;
         }
 
