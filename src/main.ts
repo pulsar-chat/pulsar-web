@@ -14,7 +14,6 @@ const clientName = cookieUser ?? "@browser";
 const cli = new PulsarClient(clientName, PULSAR_URL);
 
 cli.connect();
-
 cli.onOpen = async () => {
     console.log("Connect!");
 
@@ -37,6 +36,9 @@ cli.onOpen = async () => {
         const rsp = await cli.requestRaw("!ping");
         console.log(rsp);
     }
+
+    const rsp = await cli.requestRaw("!ping");
+    console.log(`Ping response with login: ${rsp}`);
 };
 
 cli.onMessage = (msg: Message) => {

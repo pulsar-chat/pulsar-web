@@ -1,14 +1,93 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pulsar Client</title>
+    <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/client.css">
 </head>
+
 <body>
-    Pulsar Client
+    <div class="pulsar-app">
+        <aside class="sidebar">
+            <div class="sidebar__top">
+                <div class="logo">
+                    <div class="logo__icon">P</div>
+                    <div class="logo__title">Pulsar</div>
+                </div>
+            </div>
+
+            <div class="contacts">
+                <!-- example contacts -->
+                <div class="contact contact--active">
+                    <div class="contact__avatar">@</div>
+                    <div class="contact__meta">
+                        <div class="contact__name">@user_home</div>
+                        <div class="contact__last">last message...</div>
+                    </div>
+                </div>
+                <div class="contact">
+                    <div class="contact__avatar">@</div>
+                    <div class="contact__meta">
+                        <div class="contact__name">@user_name2</div>
+                        <div class="contact__last">online</div>
+                    </div>
+                </div>
+                <div class="contact">
+                    <div class="contact__avatar">@</div>
+                    <div class="contact__meta">
+                        <div class="contact__name">@user_name3</div>
+                        <div class="contact__last">2 new</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar__footer">
+                <div class="profile">
+                    <div class="profile__avatar">@</div>
+                    <div class="profile__info">
+                        <div class="profile__name">@browser</div>
+                        <div class="profile__handle">#me</div>
+                    </div>
+                </div>
+                <div class="sidebar__actions">
+                    <button class="btn btn--ghost">⚙</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="chat">
+            <header class="chat__header">
+                <div class="chat__header-left">
+                    <div class="chat__title">@user_home</div>
+                </div>
+                <div class="chat__header-right">
+                    <div class="chat__avatar">🙂</div>
+                </div>
+            </header>
+
+            <section class="chat__messages" id="messages">
+                <div class="msg msg--left">
+                    <div class="msg__bubble">Msg 1<br><span class="msg__time">time0</span></div>
+                </div>
+                <div class="msg msg--right">
+                    <div class="msg__bubble">Hi!<br><span class="msg__time">time1</span></div>
+                </div>
+                <div class="msg msg--left">
+                    <div class="msg__bubble">Msg 2<br><span class="msg__time">time2</span></div>
+                </div>
+            </section>
+
+            <form class="chat__input" onsubmit="return false;">
+                <textarea class="chat__textarea" placeholder="Write a message..."></textarea>
+                <button class="btn btn--primary chat__send">➤</button>
+            </form>
+        </main>
+    </div>
 
     <script type="module" src="src/main.ts"></script>
 </body>
+
 </html>
