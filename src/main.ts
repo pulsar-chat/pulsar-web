@@ -36,6 +36,9 @@ cli.onOpen = async () => {
         const rsp = await cli.requestRaw("!ping");
         console.log(rsp);
     }
+
+    const rsp = await cli.requestRaw("!ping");
+    console.log(`Ping response with login: ${rsp}`);
 };
 
 cli.onMessage = (msg: Message) => {
