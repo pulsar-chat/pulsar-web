@@ -64,16 +64,7 @@ a {
 }
 
 .header__logo {
-    display: flex;
-    align-items: center;
-    font-size: 1.4rem;
-    font-weight: 600;
-    width: 10%;
-    gap: 2px;
-}
-
-.header__logo_img {
-    width: 100%;
+    width: 5%;
 }
 
 .header__nav {
@@ -128,9 +119,44 @@ a {
     color: var(--color-text-muted);
 }
 
+.btn--ghost:hover {
+    color: var(--color-text);
+    background: rgba(255, 255, 255, 0.05);
+}
+
 .btn--large {
     padding: 14px 24px;
     font-size: 1rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea {
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: rgba(108, 124, 255, 0.05);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--color-text-muted);
 }
 
 /* =========================

@@ -18,3 +18,5 @@ export function getCookie(name: string): string | null {
 export function deleteCookie(name: string) {
     document.cookie = `${name}=; Max-Age=0; path=/`;
 }
+
+export const f = () => {}

@@ -7,6 +7,8 @@
     <title>Pulsar Client</title>
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/client.css">
+    
+    <link rel="icon" href="/pulsar.ico" />
 </head>
 
 <body>
@@ -14,46 +16,35 @@
         <aside class="sidebar">
             <div class="sidebar__top">
                 <div class="logo">
-                    <div class="logo__icon">P</div>
+                    <img class="logo__icon" src="/pulsar.ico"></img>
                     <div class="logo__title">Pulsar</div>
                 </div>
             </div>
 
-            <div class="contacts">
-                <!-- example contacts -->
-                <div class="contact contact--active">
-                    <div class="contact__avatar">@</div>
-                    <div class="contact__meta">
-                        <div class="contact__name">@user_home</div>
-                        <div class="contact__last">last message...</div>
-                    </div>
+            <div class="contacts-wrapper">
+                <div class="contacts__search">
+                    <input type="text" id="contact-search" class="contacts__search-input" placeholder="Поиск контактов...">
                 </div>
-                <div class="contact">
-                    <div class="contact__avatar">@</div>
-                    <div class="contact__meta">
-                        <div class="contact__name">@user_name2</div>
-                        <div class="contact__last">online</div>
-                    </div>
+                <div class="contacts__new-chat">
+                    <input type="text" id="new-chat-username" class="contacts__new-chat-input" placeholder="@username для нового чата">
+                    <button class="btn btn--primary btn--small" id="new-chat-btn" title="Начать чат">↓</button>
                 </div>
-                <div class="contact">
-                    <div class="contact__avatar">@</div>
-                    <div class="contact__meta">
-                        <div class="contact__name">@user_name3</div>
-                        <div class="contact__last">2 new</div>
-                    </div>
+                <div class="contacts" id="contacts-list">
+                    <!-- contacts will be loaded here -->
                 </div>
             </div>
 
             <div class="sidebar__footer">
-                <div class="profile">
+                <div class="profile" id="profile-btn">
                     <div class="profile__avatar">@</div>
                     <div class="profile__info">
-                        <div class="profile__name">@browser</div>
-                        <div class="profile__handle">#me</div>
+                        <div class="profile__name" id="profile-name">@browser</div>
+                        <div class="profile__handle">#профиль</div>
                     </div>
                 </div>
                 <div class="sidebar__actions">
-                    <button class="btn btn--ghost">⚙</button>
+                    <button class="btn btn--ghost" id="settings-btn" title="Параметры">⚙</button>
+                    <button class="btn btn--ghost" id="logout-btn" title="Выход">🚪</button>
                 </div>
             </div>
         </aside>
@@ -69,15 +60,6 @@
             </header>
 
             <section class="chat__messages" id="messages">
-                <div class="msg msg--left">
-                    <div class="msg__bubble">Msg 1<br><span class="msg__time">time0</span></div>
-                </div>
-                <div class="msg msg--right">
-                    <div class="msg__bubble">Hi!<br><span class="msg__time">time1</span></div>
-                </div>
-                <div class="msg msg--left">
-                    <div class="msg__bubble">Msg 2<br><span class="msg__time">time2</span></div>
-                </div>
             </section>
 
             <form class="chat__input" onsubmit="return false;">
@@ -85,6 +67,44 @@
                 <button class="btn btn--primary chat__send">➤</button>
             </form>
         </main>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profile-modal">
+        <div class="modal__content">
+            <div class="modal__header">
+                <h2>Профиль</h2>
+                <button class="modal__close" id="profile-modal-close">&times;</button>
+            </div>
+            <div class="modal__body">
+                <div class="profile-form">
+                    <div class="form-group">
+                        <label>Имя пользователя:</label>
+                        <input type="text" id="profile-username" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" id="profile-email" placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Настоящее имя:</label>
+                        <input type="text" id="profile-realname" placeholder="Your Name">
+                    </div>
+                    <div class="form-group">
+                        <label>О себе:</label>
+                        <textarea id="profile-description" placeholder="Расскажите о себе..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>День рождения:</label>
+                        <input type="number" id="profile-birthday" placeholder="Unix timestamp (Optional)">
+                    </div>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button class="btn btn--primary" id="profile-save">Сохранить</button>
+                <button class="btn btn--ghost" id="profile-cancel">Отмена</button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="src/main.ts"></script>
