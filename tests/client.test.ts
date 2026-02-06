@@ -17,7 +17,7 @@ vi.mock('../src/websocket/pulsar', () => {
         const m = Message.fromPayload(raw);
         if (m.getReciever() === '!server.req') {
           const req = m.getContent();
-          const rspContent = 'REQ:' + req + '\x1eRSP:PONG';
+          const rspContent = 'REQ:' + req + '\x1eRSP:pong';
           const serverMsg = new Message(0, rspContent, m.getSender(), '!server.msg', Math.floor(Date.now()/1000));
           if (this.onMessage) this.onMessage(serverMsg.toPayload());
         }
@@ -40,6 +40,6 @@ describe('PulsarClient', () => {
     const cli = new PulsarClient('me', 'ws://x');
     cli.connect();
     const res = await cli.requestRaw('!ping');
-    expect(res).toBe('PONG');
+    expect(res).toBe('pong');
   });
 });
