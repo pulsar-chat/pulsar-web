@@ -46,6 +46,10 @@ export class PulsarClient {
         }
     }
 
+    disconnect(): void {
+        this.pws.disconnect();
+    }
+
     send(content: string, receiver: string) {
         const payload = new Message(0, content, receiver, this.name, Math.floor(Date.now() / 1000));
         this.pws.send(payload.toPayload());
