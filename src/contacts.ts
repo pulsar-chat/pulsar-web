@@ -6,7 +6,7 @@ import { PulsarClient } from "./client";
  */
 export async function fetchContactsFromServer(cli: PulsarClient): Promise<string[]> {
     try {
-        const rsp = await cli.requestRaw("!contact list");
+        const rsp = await cli.requestRaw("!contact list get");
         
         if (rsp && rsp !== '-') {
             // Парсим список контактов (разделенные запятой)
