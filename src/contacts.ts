@@ -1,21 +1,24 @@
 import { Contact } from "./types";
 import { PulsarClient } from "./client";
+import { getCookie } from "./cookie";
 
 /**
  * Получает список контактов с сервера
  */
 export async function fetchContactsFromServer(cli: PulsarClient): Promise<string[]> {
     try {
-        const rsp = await cli.requestRaw("!contact list get");
-        
+        const cookieUser = getCookie('pulsar_user') || '';
+        const rsp = await cli.requestRaw(`!contact get ${cookieUser}`);
+
         if (rsp && rsp !== '-') {
-            // Парсим список контактов (разделенные запятой)
-            const contactNames = rsp.split(',')
+            // Ответ может быть либо одиночным именем, либо списком, разделённым запятыми
+            const parts = rsp.indexOf(',') !== -1 ? rsp.split(',') : [rsp];
+            const contactNames = parts
                 .map(n => n.trim())
                 .filter(n => n && n.startsWith('@'));
             return contactNames;
         }
-        
+
         return [];
     } catch (err) {
         console.error('Failed to load contacts from server:', err);
@@ -40,8 +43,9 @@ export async function addContactToServer(
     contactName: string
 ): Promise<boolean> {
     try {
-        const rsp = await cli.requestRaw(`!contact add ${contactName}`);
-        return rsp === 'success' || rsp === 'ok';
+        // Второй аргумент — отображаемое имя контакта, передаём то же имя по умолчанию
+        const rsp = await cli.requestRaw(`!contact add ${contactName} ${contactName}`);
+        return rsp === 'success' || rsp === 'ok' || rsp === '+';
     } catch (err) {
         console.error('Failed to add contact to server:', err);
         return false;
@@ -56,8 +60,9 @@ export async function removeContactFromServer(
     contactName: string
 ): Promise<boolean> {
     try {
-        const rsp = await cli.requestRaw(`!contact remove ${contactName}`);
-        return rsp === 'success' || rsp === 'ok';
+        // Используем короткую форму action `rem` согласно документации
+        const rsp = await cli.requestRaw(`!contact rem ${contactName}`);
+        return rsp === 'success' || rsp === 'ok' || rsp === '+';
     } catch (err) {
         console.error('Failed to remove contact from server:', err);
         return false;

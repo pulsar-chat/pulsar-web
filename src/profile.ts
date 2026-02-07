@@ -1,5 +1,6 @@
 import { UserProfile } from "./types";
 import { PulsarClient } from "./client";
+import { getCookie } from "./cookie";
 
 /**
  * Загружает профиль пользователя с сервера
@@ -10,7 +11,8 @@ export async function loadUserProfileFromServer(
     const profile: UserProfile = {};
     
     try {
-        const rsp = await cli.requestRaw("!profile get");
+        const cookieUser = getCookie('pulsar_user');
+        const rsp = await cli.requestRaw(`!profile get ${cookieUser}`);
         
         if (rsp && rsp !== '-') {
             // Парсим формат профиля: description \x1D email \x1D realName \x1D birthday
@@ -47,8 +49,10 @@ export async function saveProfileToServer(
             profileData.birthday || ''
         ].join('\u001D');
         
-        const rsp = await cli.requestRaw(`!profile set ${profile}`);
-        return rsp === 'success' || rsp === 'ok';
+        const cookieUser = getCookie('pulsar_user');
+        const rsp = await cli.requestRaw(`!profile set ${cookieUser} ${profile}`);
+        // Сервер может возвращать '+' или 'success'/'ok'
+        return rsp === '+' || rsp === 'success' || rsp === 'ok';
     } catch (err) {
         console.error('Profile save error:', err);
         return false;

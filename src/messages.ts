@@ -3,31 +3,36 @@ import { PulsarClient } from "./client";
 
 /**
  * Запрашивает историю сообщений с сервера
- * Использует команду !chat contactName startId endId
+ * Использует команду !chat <chat> <lines>
  */
 export async function fetchMessageHistoryFromServer(
     cli: PulsarClient,
     contactName: string,
-    startId: number = 0,
-    endId?: number
+    lines: number = 50
 ): Promise<Message[]> {
     try {
-        const cmd = endId 
-            ? `!chat ${contactName} ${startId} ${endId}`
-            : `!chat ${contactName} ${startId}`;
-        
+        const cmd = `!chat ${contactName} ${lines}`;
         const rsp = await cli.requestRaw(cmd);
-        
+
         if (!rsp || rsp === '-') {
             return [];
         }
-        
-        // Парсим ответ - может быть несколько сообщений, разделенных специальным разделителем
+
+        // Сервер возвращает сообщения разделённые Unit-separator (ascii 31 = "\u001F")
+        // или Unit/Record separators — пытаемся аккуратно распарсить
+        const parts = rsp.split('\u001F');
         const messages: Message[] = [];
-        
-        // TODO: Реализовать парсинг в зависимости от формата сервера
-        // Текущий формат неизвестен, нужно уточнить с документацией
-        
+
+        for (const p of parts) {
+            const trimmed = p.trim();
+            if (!trimmed) continue;
+            try {
+                messages.push(Message.fromPayload(trimmed));
+            } catch (e) {
+                console.warn('Failed to parse message payload from server part:', e);
+            }
+        }
+
         return messages;
     } catch (err) {
         console.error('Failed to fetch message history:', err);
