@@ -3,6 +3,8 @@ class PulsarWebSocket {
     private socket: WebSocket | null = null;
     private reconnectInterval: number = 2000;
     private shouldReconnect: boolean = true;
+    private reconnectAttempts: number = 0;
+    private readonly maxReconnectInterval: number = 30000;
 
     public onOpen: (() => void) | null = null;
     public onClose: ((ev: CloseEvent) => void) | null = null;
@@ -20,19 +22,28 @@ class PulsarWebSocket {
                 this.socket.readyState === WebSocket.CONNECTING
             )
         ) return;
-
         this.shouldReconnect = true;
         this.socket = new WebSocket(this.url);
         this.socket.binaryType = "arraybuffer";
 
         this.socket.addEventListener("open", () => {
+            // Reset reconnect attempts on successful open
+            this.reconnectAttempts = 0;
             this.onOpen && this.onOpen();
         }); // обработка открытия сокета
 
         this.socket.addEventListener("close", (ev) => {
             this.onClose && this.onClose(ev);
             this.socket = null;
-            if (this.shouldReconnect) setTimeout(() => this.connect(), this.reconnectInterval);
+            if (this.shouldReconnect) {
+                // exponential backoff for reconnects
+                this.reconnectAttempts++;
+                const interval = Math.min(this.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1), this.maxReconnectInterval);
+                // Only attempt reconnect if shouldReconnect still true at execution time
+                setTimeout(() => {
+                    if (this.shouldReconnect) this.connect();
+                }, interval);
+            }
         }); // обработка закрытия сокета и реконнект
 
         this.socket.addEventListener("error", (ev) => {
