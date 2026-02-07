@@ -1,81 +1,124 @@
-import PulsarWebSocket from "./websocket/pulsar";
 import Message from "./message";
 import { PulsarClient } from "./client";
 import { getCookie, deleteCookie, setCookie } from "./cookie";
 import { PULSAR_URL } from "./config";
 
-// Type definitions
-interface Contact {
-    name: string;
-    lastMessage?: string;
-    lastTime?: number;
-    unread?: number;
-}
+// Import new modules
+import { AppState, UserProfile, Contact, MAX_STORED_MESSAGES } from "./types";
+import { 
+    loadContactsFromStorage, 
+    saveContactsToStorage, 
+    loadMessagesFromStorage, 
+    saveMessagesToStorage, 
+    pruneMessageHistory,
+    addMessageToHistory 
+} from "./storage";
+import { 
+    addContact, 
+    fetchContactsFromServer, 
+    addContactToServer, 
+    removeContactFromServer,
+    updateContactLastMessage, 
+    incrementUnread, 
+    clearUnread 
+} from "./contacts";
+import { 
+    initUIElements, 
+    getUIElement, 
+    escapeHtml, 
+    displayMessage, 
+    updateChatTitle, 
+    clearMessagesUI,
+    updateContactsListUI,
+    openProfileModal,
+    closeProfileModal,
+    getProfileFormData,
+    updateProfileName,
+    focusTextarea,
+    clearTextarea,
+    getTextareaValue,
+    getNewChatUsername,
+    clearNewChatUsername,
+    getContactSearchQuery
+} from "./ui";
+import {
+    loadUserProfileFromServer,
+    saveProfileToServer
+} from "./profile";
 
-interface UserProfile {
-    description?: string;
-    email?: string;
-    realName?: string;
-    birthday?: number;
-}
+// Initialize UI first
+initUIElements();
 
-// UI Elements
-const messagesContainer = document.getElementById('messages');
-const textarea = document.querySelector('.chat__textarea') as HTMLTextAreaElement;
-const sendBtn = document.querySelector('.chat__send') as HTMLButtonElement;
-const chatTitle = document.querySelector('.chat__title') as HTMLDivElement;
-const contactsList = document.getElementById('contacts-list') as HTMLDivElement;
-const profileBtn = document.getElementById('profile-btn') as HTMLDivElement;
-const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
-const profileModal = document.getElementById('profile-modal') as HTMLDivElement;
-const profileModalClose = document.getElementById('profile-modal-close') as HTMLButtonElement;
-const profileSaveBtn = document.getElementById('profile-save') as HTMLButtonElement;
-const profileCancelBtn = document.getElementById('profile-cancel') as HTMLButtonElement;
-const profileName = document.getElementById('profile-name') as HTMLDivElement;
-const contactSearch = document.getElementById('contact-search') as HTMLInputElement;
-const newChatUsername = document.getElementById('new-chat-username') as HTMLInputElement;
-const newChatBtn = document.getElementById('new-chat-btn') as HTMLButtonElement;
-
-// State
+// Global state
 let currentChat: string = "@browser";
 let currentUser: string = "@browser";
 let cli: PulsarClient | null = null;
 let contacts: Map<string, Contact> = new Map();
 let messageHistory: Map<string, Message[]> = new Map();
 let userProfile: UserProfile = {};
+let savingTimeout: number | null = null;
 
-// Initialize client
-function initClient(username: string) {
+/**
+ * Сохраняет данные чата с задержкой (избегает частого сохранения)
+ */
+function saveChatDataWithDelay(): void {
+    if (savingTimeout) {
+        clearTimeout(savingTimeout);
+    }
+    
+    savingTimeout = setTimeout(() => {
+        saveContactsToStorage(contacts);
+        saveMessagesToStorage(messageHistory);
+        pruneMessageHistory(messageHistory);
+        savingTimeout = null;
+    }, 1000); // Сохраняем через 1 секунду после последнего изменения
+}
+
+/**
+ * Инициализирует клиент Pulsar
+ */
+function initClient(username: string, connectNow: boolean = true) {
     cli = new PulsarClient(username, PULSAR_URL);
     currentUser = username;
 
-    cli.connect();
-
+    // Assign client event handlers BEFORE connecting to avoid race conditions
     cli.onOpen = async () => {
         console.log("Connected to server!");
-        updateUI("Подключено!");
-        
+        updateChatTitle("Подключено!");
+
         const rsp = await cli!.requestRaw("!ping");
         console.log(`Ping response: ${rsp}`);
-        
-        // Load saved chat data from storage
-        loadChatData();
-        
-        // Load user profile
-        loadUserProfile();
-        
-        // Load contacts list
-        loadContacts();
+
+        // Загружаем сохраненные данные чата
+        contacts = loadContactsFromStorage();
+        messageHistory = loadMessagesFromStorage();
+
+        // Загружаем список контактов с сервера
+        await loadContacts();
+
+        // Загружаем профиль пользователя
+        if (cli) {
+            userProfile = await loadUserProfileFromServer(cli);
+        }
+        updateProfileName(currentUser);
+
+        // Показываем первый контакт или системное сообщение
+        if (contacts.size > 0) {
+            const firstContact = Array.from(contacts.values())[0];
+            selectContact(firstContact.name);
+        } else {
+            updateChatTitle("Начните новый чат");
+        }
     };
 
     cli.onClose = () => {
-        updateUI("Отключено");
+        updateChatTitle("Отключено");
         console.log("Disconnected from server");
     };
 
     cli.onError = (ev) => {
         console.error("Connection error:", ev);
-        updateUI("Ошибка подключения");
+        updateChatTitle("Ошибка подключения");
     };
 
     cli.onMessage = (msg: Message) => {
@@ -83,391 +126,195 @@ function initClient(username: string) {
         const receiver = msg.getReciever();
         const content = msg.getContent();
 
-        // Handle server responses
+        // Обрабатываем ответы сервера
         if (sender === "!server.msg") {
             console.log("Server response:", content);
             return;
         }
 
-        // Handle error messages
+        // Обрабатываем ошибки сервера
         if (sender === "!server.error") {
             console.error("Server error:", content);
-            updateUI(`Ошибка: ${content}`);
+            updateChatTitle(`Ошибка: ${content}`);
             return;
         }
 
-        // Display regular messages
+        // Определяем контакт
         const relevantChat = sender === currentUser ? receiver : sender;
         
-        // Store in history
-        if (!messageHistory.has(relevantChat)) {
-            messageHistory.set(relevantChat, []);
+        // Автоматически добавляем контакт, если его еще нет (ИСПРАВЛЕНИЕ БАГА)
+        if (!contacts.has(relevantChat)) {
+            addContact(contacts, relevantChat);
+            console.log(`Added new contact: ${relevantChat}`);
         }
-        messageHistory.get(relevantChat)!.push(msg);
         
-        // Update contact last message
-        if (contacts.has(relevantChat)) {
-            const contact = contacts.get(relevantChat)!;
-            contact.lastMessage = content;
-            contact.lastTime = Math.floor(Date.now() / 1000);
-        }
+        // Сохраняем в историю
+        addMessageToHistory(messageHistory, relevantChat, msg);
+        
+        // Обновляем информацию контакта
+        updateContactLastMessage(contacts, relevantChat, content, msg.getTime());
 
-        // Display if in this chat
+        // Отображаем сообщение если оно в текущем чате
         if (sender === currentChat || receiver === currentChat) {
             displayMessage(content, sender === currentUser);
             console.log(`Message from ${sender}: ${content}`);
         } else {
-            // Mark as unread
-            if (contacts.has(relevantChat)) {
-                const contact = contacts.get(relevantChat)!;
-                contact.unread = (contact.unread || 0) + 1;
-            }
-            updateContactsList();
+            // Помечаем как непрочитанное
+            incrementUnread(contacts, relevantChat);
         }
         
-        // Save chat data after any message
-        saveChatData();
+        // Обновляем UI и сохраняем
+        updateContactsListUI(contacts, currentChat, selectContact);
+        saveChatDataWithDelay();
     };
-}
 
-function displayMessage(content: string, isOwn: boolean = false) {
-    if (!messagesContainer) return;
-
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `msg ${isOwn ? 'msg--right' : 'msg--left'}`;
-
-    const timestamp = new Date().toLocaleTimeString();
-    const msgBubble = document.createElement('div');
-    msgBubble.className = 'msg__bubble';
-    msgBubble.innerHTML = `${escapeHtml(content)}<br><span class="msg__time">${timestamp}</span>`;
-
-    msgDiv.appendChild(msgBubble);
-    messagesContainer.appendChild(msgDiv);
-
-    // Auto-scroll to bottom
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-function updateUI(status: string) {
-    if (chatTitle) {
-        chatTitle.textContent = status;
+    if (connectNow) {
+        cli.connect();
     }
 }
 
-function escapeHtml(text: string): string {
-    const map: { [key: string]: string } = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
-}
-
-// Storage functions
-function saveChatData() {
-    // Save contacts
-    const contactsData = Array.from(contacts.entries()).map(([name, contact]) => ({
-        name,
-        lastMessage: contact.lastMessage,
-        lastTime: contact.lastTime,
-        unread: contact.unread
-    }));
-    localStorage.setItem('pulsar_contacts', JSON.stringify(contactsData));
-    
-    // Save message history
-    const historyData = Array.from(messageHistory.entries()).map(([chat, messages]) => ({
-        chat,
-        messages: messages.map(msg => ({
-            content: msg.getContent(),
-            receiver: msg.getReciever(),
-            sender: msg.getSender()
-        }))
-    }));
-    localStorage.setItem('pulsar_message_history', JSON.stringify(historyData));
-}
-
-function loadChatData() {
-    // Load contacts
-    const contactsJson = localStorage.getItem('pulsar_contacts');
-    if (contactsJson) {
-        try {
-            const contactsData = JSON.parse(contactsJson);
-            for (const contact of contactsData) {
-                contacts.set(contact.name, {
-                    name: contact.name,
-                    lastMessage: contact.lastMessage,
-                    lastTime: contact.lastTime,
-                    unread: contact.unread
-                });
-            }
-        } catch (e) {
-            console.error('Failed to load contacts from storage:', e);
-        }
-    }
-    
-    // Load message history
-    const historyJson = localStorage.getItem('pulsar_message_history');
-    if (historyJson) {
-        try {
-            const historyData = JSON.parse(historyJson);
-            for (const item of historyData) {
-                const messages: Message[] = [];
-                for (const msgData of item.messages) {
-                    // Create Message with current timestamp (0 means it's a new id)
-                    const msg = new Message(
-                        0,
-                        msgData.content,
-                        msgData.receiver,
-                        msgData.sender,
-                        Math.floor(Date.now() / 1000)
-                    );
-                    messages.push(msg);
-                }
-                messageHistory.set(item.chat, messages);
-            }
-        } catch (e) {
-            console.error('Failed to load message history from storage:', e);
-        }
-    }
-}
-
-// Load contacts from server
-async function loadContacts() {
+/**
+ * Загружает контакты с сервера и объединяет с локальными
+ */
+async function loadContacts(): Promise<void> {
     if (!cli) return;
     
     try {
-        const rsp = await cli.requestRaw("!contact list");
+        const serverContacts = await fetchContactsFromServer(cli);
         
-        if (rsp && rsp !== '-') {
-            // Parse contacts list (comma-separated)
-            const contactNames = rsp.split(',').map(n => n.trim()).filter(n => n);
-            
-            for (const name of contactNames) {
-                if (!contacts.has(name)) {
-                    contacts.set(name, { name });
-                }
+        for (const contactName of serverContacts) {
+            if (!contacts.has(contactName)) {
+                addContact(contacts, contactName);
             }
         }
         
-        updateContactsList();
+        updateContactsListUI(contacts, currentChat, selectContact);
+        saveChatDataWithDelay();
     } catch (err) {
         console.error('Failed to load contacts:', err);
     }
 }
 
-// Load user profile from server
-async function loadUserProfile() {
-    if (!cli) return;
-    
-    try {
-        const rsp = await cli.requestRaw("!profile get");
-        
-        if (rsp && rsp !== '-') {
-            // Parse profile format: description \x1D email \x1D realName \x1D birthday
-            const fields = rsp.split('\u001D');
-            if (fields[0]) userProfile.description = fields[0];
-            if (fields[1]) userProfile.email = fields[1];
-            if (fields[2]) userProfile.realName = fields[2];
-            if (fields[3]) userProfile.birthday = parseInt(fields[3]);
-        }
-    } catch (err) {
-        console.error('Failed to load profile:', err);
-    }
-}
-
-// Update contacts list UI
-function updateContactsList() {
-    if (!contactsList) return;
-    
-    const searchQuery = contactSearch?.value.toLowerCase() || '';
-    
-    let html = '';
-    const sortedContacts = Array.from(contacts.values())
-        .filter(c => c.name.toLowerCase().includes(searchQuery))
-        .sort((a, b) => (b.lastTime || 0) - (a.lastTime || 0));
-    
-    for (const contact of sortedContacts) {
-        const isActive = contact.name === currentChat ? ' contact--active' : '';
-        const lastMsg = contact.lastMessage || 'Нет сообщений';
-        const unreadBadge = contact.unread ? `<span class="contact__badge">${contact.unread}</span>` : '';
-        
-        html += `
-            <div class="contact${isActive}" data-contact="${contact.name}">
-                <div class="contact__avatar">${contact.name[1] || '@'}</div>
-                <div class="contact__meta">
-                    <div class="contact__name">${escapeHtml(contact.name)}</div>
-                    <div class="contact__last">${escapeHtml(lastMsg.substring(0, 30))}</div>
-                </div>
-                ${unreadBadge}
-            </div>
-        `;
-    }
-    
-    if (sortedContacts.length === 0) {
-        html = '<div style="padding: 20px; text-align: center; color: var(--color-text-muted);">Нет контактов</div>';
-    }
-    
-    contactsList.innerHTML = html;
-    
-    // Save chat data when list updates
-    saveChatData();
-    
-    // Add click handlers
-    const contactElements = contactsList.querySelectorAll('.contact');
-    contactElements.forEach(el => {
-        el.addEventListener('click', () => {
-            const contactName = el.getAttribute('data-contact');
-            if (contactName) {
-                selectContact(contactName);
-            }
-        });
-    });
-}
-
-// Select a contact
-function selectContact(contactName: string) {
+/**
+ * Выбирает контакт и отображает его историю
+ */
+function selectContact(contactName: string): void {
     currentChat = contactName;
     
-    // Clear and load message history
-    if (messagesContainer) {
-        messagesContainer.innerHTML = '';
-    }
+    // Очищаем UI сообщений
+    clearMessagesUI();
     
-    // Load messages for this contact
+    // Загружаем и отображаем историю сообщений
     const msgs = messageHistory.get(contactName) || [];
     for (const msg of msgs) {
         const isOwn = msg.getSender() === currentUser;
         displayMessage(msg.getContent(), isOwn);
     }
     
-    // Clear unread count
-    if (contacts.has(contactName)) {
-        contacts.get(contactName)!.unread = 0;
-    }
+    // Очищаем счетчик непрочитанных
+    clearUnread(contacts, contactName);
     
-    updateContactsList();
-    updateUI(contactName);
-    
-    if (textarea) {
-        textarea.focus();
-    }
+    // Обновляем UI
+    updateContactsListUI(contacts, currentChat, selectContact);
+    updateChatTitle(contactName);
+    focusTextarea();
 }
 
-// Start new chat with username
-function startNewChat(username: string) {
-    // Validate username
+/**
+ * Начинает новый чат с указанным пользователем
+ */
+function startNewChat(username: string): void {
+    // Валидируем имя пользователя
     if (!username || !username.startsWith('@')) {
-        updateUI('Имя должно начинаться с @');
+        updateChatTitle('Имя должно начинаться с @');
         return;
     }
     
     if (username === currentUser) {
-        updateUI('Нельзя написать самому себе');
+        updateChatTitle('Нельзя написать самому себе');
         return;
     }
     
-    // Add to contacts if not exists
+    // Добавляем в контакты если еще нет
     if (!contacts.has(username)) {
-        contacts.set(username, { name: username });
+        addContact(contacts, username);
     }
     
-    // Clear input
-    if (newChatUsername) {
-        newChatUsername.value = '';
-    }
+    // Очищаем поле ввода
+    clearNewChatUsername();
     
-    // Select this contact
+    // Выбираем контакт
     selectContact(username);
-    updateUI(`Чат с ${username}`);
-    
-    // Save chat data
-    saveChatData();
+    saveChatDataWithDelay();
 }
 
-// Profile modal functions
-function openProfileModal() {
-    if (!profileModal) return;
-    
-    // Fill in current profile data
-    const usernameInput = document.getElementById('profile-username') as HTMLInputElement;
-    const emailInput = document.getElementById('profile-email') as HTMLInputElement;
-    const realnameInput = document.getElementById('profile-realname') as HTMLInputElement;
-    const descriptionInput = document.getElementById('profile-description') as HTMLTextAreaElement;
-    const birthdayInput = document.getElementById('profile-birthday') as HTMLInputElement;
-    
-    if (usernameInput) usernameInput.value = currentUser;
-    if (emailInput) emailInput.value = userProfile.email || '';
-    if (realnameInput) realnameInput.value = userProfile.realName || '';
-    if (descriptionInput) descriptionInput.value = userProfile.description || '';
-    if (birthdayInput) birthdayInput.value = (userProfile.birthday || '').toString();
-    
-    profileModal.classList.add('modal--active');
-}
-
-function closeProfileModal() {
-    if (profileModal) {
-        profileModal.classList.remove('modal--active');
+/**
+ * Добавляет контакт на сервер
+ */
+async function addContactViaServer(username: string): Promise<void> {
+    if (!cli) {
+        updateChatTitle('Клиент не инициализирован');
+        return;
     }
-}
-
-async function saveProfile() {
-    if (!cli) return;
     
-    const emailInput = document.getElementById('profile-email') as HTMLInputElement;
-    const realnameInput = document.getElementById('profile-realname') as HTMLInputElement;
-    const descriptionInput = document.getElementById('profile-description') as HTMLTextAreaElement;
-    const birthdayInput = document.getElementById('profile-birthday') as HTMLInputElement;
+    if (!username || !username.startsWith('@')) {
+        updateChatTitle('Имя должно начинаться с @');
+        return;
+    }
     
-    const profile = [
-        descriptionInput?.value || '',
-        emailInput?.value || '',
-        realnameInput?.value || '',
-        birthdayInput?.value || ''
-    ].join('\u001D');
+    if (username === currentUser) {
+        updateChatTitle('Нельзя добавить самого себя');
+        return;
+    }
     
     try {
-        const rsp = await cli.requestRaw(`!profile set ${profile}`);
-        
-        if (rsp === 'success') {
-            userProfile.email = emailInput?.value;
-            userProfile.realName = realnameInput?.value;
-            userProfile.description = descriptionInput?.value;
-            userProfile.birthday = birthdayInput?.value ? parseInt(birthdayInput.value) : undefined;
-            
-            closeProfileModal();
-            updateUI('Профиль сохранен!');
+        const success = await addContactToServer(cli, username);
+        if (success) {
+            addContact(contacts, username);
+            updateContactsListUI(contacts, currentChat, selectContact);
+            saveChatDataWithDelay();
+            updateChatTitle(`Контакт ${username} добавлен!`);
         } else {
-            console.error('Failed to save profile:', rsp);
+            updateChatTitle(`Ошибка при добавлении контакта`);
         }
     } catch (err) {
-        console.error('Profile save error:', err);
-        updateUI('Ошибка сохранения профиля');
+        console.error('Failed to add contact:', err);
+        updateChatTitle(`Ошибка: ${err}`);
     }
 }
 
-// Handle login
+/**
+ * Обработчик авто-входа
+ */
 async function handleAutoLogin() {
     const cookieUser = getCookie('pulsar_user');
     const cookiePass = getCookie('pulsar_pass');
 
     if (cookieUser && cookiePass) {
-        initClient(cookieUser);
+        // Initialize client but don't connect yet — we'll attach auto-login wrapper first
+        initClient(cookieUser, false);
+        const originalOnOpen = cli!.onOpen;
+
         cli!.onOpen = async () => {
             try {
                 const loginReq = `!login ${cookieUser} ${cookiePass}`;
                 const loginRsp = await cli!.requestRaw(loginReq);
 
-                if (loginRsp === 'success') {
+                if (loginRsp === 'success' || loginRsp === 'ok') {
                     console.log('Auto-login successful:', cookieUser);
-                    profileName.textContent = cookieUser;
-                    updateUI(cookieUser);
+                    updateProfileName(cookieUser);
+                    updateChatTitle(cookieUser);
                     displayMessage("Автовход выполнен!", true);
+
+                    // Вызываем оригинальный обработчик, если есть
+                    if (originalOnOpen) {
+                        await originalOnOpen();
+                    }
                 } else {
                     console.warn('Auto-login failed:', loginRsp);
                     deleteCookie('pulsar_user');
                     deleteCookie('pulsar_pass');
+                    if (cli) cli.disconnect();
                     displayMessage("Сеанс истек. Пожалуйста, войдите снова.", false);
                     setTimeout(() => {
                         window.location.href = '/login';
@@ -477,35 +324,85 @@ async function handleAutoLogin() {
                 console.warn('Auto-login error:', err);
                 deleteCookie('pulsar_user');
                 deleteCookie('pulsar_pass');
+                if (cli) cli.disconnect();
                 window.location.href = '/login';
             }
         };
+
+        // Now connect after wrapper is in place
+        cli!.connect();
     } else {
         window.location.href = '/login';
     }
 }
 
-// Handle message sending
+/**
+ * Обработчик сохранения профиля
+ */
+async function handleSaveProfile() {
+    if (!cli) return;
+    
+    const profileData = getProfileFormData();
+    
+    try {
+        const success = await saveProfileToServer(cli, profileData);
+        
+        if (success) {
+            userProfile.email = profileData.email;
+            userProfile.realName = profileData.realName;
+            userProfile.description = profileData.description;
+            userProfile.birthday = profileData.birthday ? parseInt(profileData.birthday) : undefined;
+            
+            closeProfileModal();
+            updateChatTitle('Профиль сохранен!');
+        } else {
+            console.error('Failed to save profile');
+            updateChatTitle('Ошибка сохранения профиля');
+        }
+    } catch (err) {
+        console.error('Profile save error:', err);
+        updateChatTitle('Ошибка сохранения профиля');
+    }
+}
+
+/**
+ * События и обработчики
+ */
+
+// Отправка сообщений
+const sendBtn = getUIElement('sendBtn');
+const textarea = getUIElement('textarea');
+
 if (sendBtn && textarea) {
     sendBtn.addEventListener('click', async () => {
-        const message = textarea.value.trim();
+        const message = getTextareaValue();
         if (!message || !cli) return;
 
         try {
             cli.send(message, currentChat);
-            displayMessage(message, true);
-            textarea.value = '';
-            textarea.focus();
             
-            // Save chat data when message is sent
-            saveChatData();
+            // Добавляем сообщение в историю
+            const msg = new Message(
+                0,
+                message,
+                currentChat,
+                currentUser,
+                Math.floor(Date.now() / 1000)
+            );
+            addMessageToHistory(messageHistory, currentChat, msg);
+            
+            displayMessage(message, true);
+            clearTextarea();
+            focusTextarea();
+            
+            saveChatDataWithDelay();
         } catch (err) {
             console.error('Send error:', err);
             displayMessage(`Ошибка: ${err}`, false);
         }
     });
 
-    // Send on Enter (Ctrl+Enter for new line)
+    // Отправка при Enter (Shift+Enter для новой строки)
     textarea.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -514,9 +411,16 @@ if (sendBtn && textarea) {
     });
 }
 
-// Profile modal event listeners
+// Профиль
+const profileBtn = getUIElement('profileBtn');
+const profileModalClose = getUIElement('profileModalClose');
+const profileCancelBtn = getUIElement('profileCancelBtn');
+const profileSaveBtn = getUIElement('profileSaveBtn');
+
 if (profileBtn) {
-    profileBtn.addEventListener('click', openProfileModal);
+    profileBtn.addEventListener('click', () => {
+        openProfileModal(currentUser, userProfile);
+    });
 }
 
 if (profileModalClose) {
@@ -528,10 +432,11 @@ if (profileCancelBtn) {
 }
 
 if (profileSaveBtn) {
-    profileSaveBtn.addEventListener('click', saveProfile);
+    profileSaveBtn.addEventListener('click', handleSaveProfile);
 }
 
-// Logout button
+// Выход
+const logoutBtn = getUIElement('logoutBtn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
         deleteCookie('pulsar_user');
@@ -543,17 +448,21 @@ if (logoutBtn) {
     });
 }
 
-// Contact search
+// Поиск контактов
+const contactSearch = getUIElement('contactSearch');
 if (contactSearch) {
     contactSearch.addEventListener('input', () => {
-        updateContactsList();
+        updateContactsListUI(contacts, currentChat, selectContact);
     });
 }
 
-// New chat
+// Новый чат
+const newChatBtn = getUIElement('newChatBtn');
+const newChatUsername = getUIElement('newChatUsername');
+
 if (newChatBtn && newChatUsername) {
     newChatBtn.addEventListener('click', () => {
-        const username = newChatUsername.value.trim();
+        const username = getNewChatUsername();
         if (username) {
             startNewChat(username);
         }
@@ -561,7 +470,7 @@ if (newChatBtn && newChatUsername) {
     
     newChatUsername.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            const username = newChatUsername.value.trim();
+            const username = getNewChatUsername();
             if (username) {
                 startNewChat(username);
             }
@@ -569,7 +478,8 @@ if (newChatBtn && newChatUsername) {
     });
 }
 
-// Close modal on outside click
+// Закрытие модального окна профиля при клике вне
+const profileModal = getUIElement('profileModal');
 if (profileModal) {
     profileModal.addEventListener('click', (e) => {
         if (e.target === profileModal) {
@@ -578,6 +488,8 @@ if (profileModal) {
     });
 }
 
-// Start the client
+/**
+ * Инициализация приложения
+ */
 console.log("Pulsar Web Client initialized");
 handleAutoLogin();

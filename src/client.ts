@@ -20,9 +20,9 @@ export class PulsarClient {
     }
 
     connect(): void {
-        this.pws.connect();
-
+        // Bind websocket callbacks first to avoid race where socket opens before handlers assigned
         this.pws.onOpen = () => {
+            // reset any client-side onOpen handling
             this.onOpen && this.onOpen();
         };
 
@@ -43,7 +43,10 @@ export class PulsarClient {
             }
 
             this.onMessage && this.onMessage(m);
-        }
+        };
+
+        // Now establish connection
+        this.pws.connect();
     }
 
     disconnect(): void {
