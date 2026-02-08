@@ -61,7 +61,9 @@ class PulsarWebSocket {
     disconnect() {
         this.shouldReconnect = false;
         if (this.socket) {
-            this.socket.close(0, "disconnect (PulsarWebSocket::disconnect)");
+            if (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING) {
+                this.socket.close(1000, "disconnect (PulsarWebSocket::disconnect)");
+            }
             this.socket = null;
         }
     }

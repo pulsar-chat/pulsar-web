@@ -86,8 +86,12 @@ function initClient(username: string, connectNow: boolean = true) {
         console.log("Connected to server!");
         updateChatTitle("Подключено!");
 
-        const rsp = await cli!.requestRaw("!ping");
-        console.log(`Ping response: ${rsp}`);
+        try {
+            const rsp = await cli!.requestRaw("!ping");
+            console.log(`Ping response: ${rsp}`);
+        } catch (err) {
+            console.warn('Ping failed:', err);
+        }
 
         // Загружаем сохраненные данные чата
         contacts = loadContactsFromStorage();
