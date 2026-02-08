@@ -1,7 +1,6 @@
 import { Contact } from "./types";
 import { getSortedContacts } from "./contacts";
 
-// Кэш DOM элементов
 const uiElements = {
     messagesContainer: null as HTMLDivElement | null,
     textarea: null as HTMLTextAreaElement | null,
@@ -20,9 +19,6 @@ const uiElements = {
     newChatBtn: null as HTMLButtonElement | null,
 };
 
-/**
- * Инициализирует UI элементы
- */
 export function initUIElements(): void {
     uiElements.messagesContainer = document.getElementById('messages') as HTMLDivElement;
     uiElements.textarea = document.querySelector('.chat__textarea') as HTMLTextAreaElement;
@@ -41,16 +37,10 @@ export function initUIElements(): void {
     uiElements.newChatBtn = document.getElementById('new-chat-btn') as HTMLButtonElement;
 }
 
-/**
- * Возвращает кэшированный UI элемент
- */
 export function getUIElement<K extends keyof typeof uiElements>(key: K): typeof uiElements[K] {
     return uiElements[key];
 }
 
-/**
- * Экранирует HTML символы
- */
 export function escapeHtml(text: string): string {
     const map: { [key: string]: string } = {
         '&': '&amp;',
@@ -62,9 +52,6 @@ export function escapeHtml(text: string): string {
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
-/**
- * Отображает сообщение в чате
- */
 export function displayMessage(content: string, isOwn: boolean = false): void {
     const messagesContainer = getUIElement('messagesContainer');
     if (!messagesContainer) return;
@@ -80,13 +67,9 @@ export function displayMessage(content: string, isOwn: boolean = false): void {
     msgDiv.appendChild(msgBubble);
     messagesContainer.appendChild(msgDiv);
 
-    // Автопрокрутка вниз
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-/**
- * Обновляет статус/заголовок чата
- */
 export function updateChatTitle(status: string): void {
     const chatTitle = getUIElement('chatTitle');
     if (chatTitle) {
@@ -94,9 +77,6 @@ export function updateChatTitle(status: string): void {
     }
 }
 
-/**
- * Очищает историю сообщений в UI
- */
 export function clearMessagesUI(): void {
     const messagesContainer = getUIElement('messagesContainer');
     if (messagesContainer) {
@@ -104,9 +84,6 @@ export function clearMessagesUI(): void {
     }
 }
 
-/**
- * Обновляет список контактов в UI
- */
 export function updateContactsListUI(
     contacts: Map<string, Contact>,
     currentChat: string,
@@ -146,7 +123,6 @@ export function updateContactsListUI(
     
     contactsList.innerHTML = html;
     
-    // Добавляем обработчики кликов
     const contactElements = contactsList.querySelectorAll('.contact');
     contactElements.forEach(el => {
         el.addEventListener('click', () => {
@@ -158,9 +134,6 @@ export function updateContactsListUI(
     });
 }
 
-/**
- * Открывает модальное окно профиля
- */
 export function openProfileModal(currentUser: string, userProfile: any): void {
     const profileModal = getUIElement('profileModal');
     if (!profileModal) return;
@@ -180,9 +153,6 @@ export function openProfileModal(currentUser: string, userProfile: any): void {
     profileModal.classList.add('modal--active');
 }
 
-/**
- * Закрывает модальное окно профиля
- */
 export function closeProfileModal(): void {
     const profileModal = getUIElement('profileModal');
     if (profileModal) {
@@ -190,9 +160,6 @@ export function closeProfileModal(): void {
     }
 }
 
-/**
- * Получает данные профиля из формы
- */
 export function getProfileFormData(): any {
     const emailInput = document.getElementById('profile-email') as HTMLInputElement;
     const realnameInput = document.getElementById('profile-realname') as HTMLInputElement;
@@ -207,9 +174,6 @@ export function getProfileFormData(): any {
     };
 }
 
-/**
- * Обновляет имя профиля в UI
- */
 export function updateProfileName(username: string): void {
     const profileName = getUIElement('profileName');
     if (profileName) {
@@ -217,9 +181,6 @@ export function updateProfileName(username: string): void {
     }
 }
 
-/**
- * Фокусирует на textarea
- */
 export function focusTextarea(): void {
     const textarea = getUIElement('textarea');
     if (textarea) {
@@ -227,9 +188,6 @@ export function focusTextarea(): void {
     }
 }
 
-/**
- * Очищает textarea
- */
 export function clearTextarea(): void {
     const textarea = getUIElement('textarea');
     if (textarea) {
@@ -237,25 +195,16 @@ export function clearTextarea(): void {
     }
 }
 
-/**
- * Получает текст из textarea
- */
 export function getTextareaValue(): string {
     const textarea = getUIElement('textarea');
     return textarea?.value.trim() || '';
 }
 
-/**
- * Получает значение поля ввода нового чата
- */
 export function getNewChatUsername(): string {
     const newChatUsername = getUIElement('newChatUsername');
     return newChatUsername?.value.trim() || '';
 }
 
-/**
- * Очищает поле ввода нового чата
- */
 export function clearNewChatUsername(): void {
     const newChatUsername = getUIElement('newChatUsername');
     if (newChatUsername) {
@@ -263,9 +212,6 @@ export function clearNewChatUsername(): void {
     }
 }
 
-/**
- * Получает значение поиска контактов
- */
 export function getContactSearchQuery(): string {
     const contactSearch = getUIElement('contactSearch');
     return contactSearch?.value.toLowerCase() || '';

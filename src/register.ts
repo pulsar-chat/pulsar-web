@@ -65,7 +65,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const client = new PulsarClient('@browser', PULSAR_URL);
             client.connect();
 
-            // wait until socket is open
             await new Promise<void>((res, rej) => {
                 const t = setTimeout(() => rej(new Error('timeout')), 3000);
                 client.onOpen = () => {

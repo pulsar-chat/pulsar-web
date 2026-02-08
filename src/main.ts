@@ -2,8 +2,6 @@ import Message from "./message";
 import { PulsarClient } from "./client";
 import { getCookie, deleteCookie, setCookie } from "./cookie";
 import { PULSAR_URL } from "./config";
-
-// Import new modules
 import { AppState, UserProfile, Contact, MAX_STORED_MESSAGES } from "./types";
 import { 
     loadContactsFromStorage, 
@@ -46,10 +44,8 @@ import {
     saveProfileToServer
 } from "./profile";
 
-// Initialize UI first
 initUIElements();
 
-// Global state
 let currentChat: string = "@browser";
 let currentUser: string = "@browser";
 let cli: PulsarClient | null = null;
@@ -58,9 +54,6 @@ let messageHistory: Map<string, Message[]> = new Map();
 let userProfile: UserProfile = {};
 let savingTimeout: number | null = null;
 
-/**
- * Сохраняет данные чата с задержкой (избегает частого сохранения)
- */
 function saveChatDataWithDelay(): void {
     if (savingTimeout) {
         clearTimeout(savingTimeout);
@@ -71,17 +64,13 @@ function saveChatDataWithDelay(): void {
         saveMessagesToStorage(messageHistory);
         pruneMessageHistory(messageHistory);
         savingTimeout = null;
-    }, 1000); // Сохраняем через 1 секунду после последнего изменения
+    }, 1000);
 }
 
-/**
- * Инициализирует клиент Pulsar
- */
 function initClient(username: string, connectNow: boolean = true) {
     cli = new PulsarClient(username, PULSAR_URL);
     currentUser = username;
 
-    // Assign client event handlers BEFORE connecting to avoid race conditions
     cli.onOpen = async () => {
         console.log("Connected to server!");
         updateChatTitle("Подключено!");
@@ -93,20 +82,16 @@ function initClient(username: string, connectNow: boolean = true) {
             console.warn('Ping failed:', err);
         }
 
-        // Загружаем сохраненные данные чата
         contacts = loadContactsFromStorage();
         messageHistory = loadMessagesFromStorage();
 
-        // Загружаем список контактов с сервера
         await loadContacts();
 
-        // Загружаем профиль пользователя
         if (cli) {
             userProfile = await loadUserProfileFromServer(cli);
         }
         updateProfileName(currentUser);
 
-        // Показываем первый контакт или системное сообщение
         if (contacts.size > 0) {
             const firstContact = Array.from(contacts.values())[0];
             selectContact(firstContact.name);
@@ -130,44 +115,35 @@ function initClient(username: string, connectNow: boolean = true) {
         const receiver = msg.getReciever();
         const content = msg.getContent();
 
-        // Обрабатываем ответы сервера
         if (sender === "!server.msg") {
             console.log("Server response:", content);
             return;
         }
 
-        // Обрабатываем ошибки сервера
         if (sender === "!server.error") {
             console.error("Server error:", content);
             updateChatTitle(`Ошибка: ${content}`);
             return;
         }
 
-        // Определяем контакт
         const relevantChat = sender === currentUser ? receiver : sender;
         
-        // Автоматически добавляем контакт, если его еще нет (ИСПРАВЛЕНИЕ БАГА)
         if (!contacts.has(relevantChat)) {
             addContact(contacts, relevantChat);
             console.log(`Added new contact: ${relevantChat}`);
         }
         
-        // Сохраняем в историю
         addMessageToHistory(messageHistory, relevantChat, msg);
         
-        // Обновляем информацию контакта
         updateContactLastMessage(contacts, relevantChat, content, msg.getTime());
 
-        // Отображаем сообщение если оно в текущем чате
         if (sender === currentChat || receiver === currentChat) {
             displayMessage(content, sender === currentUser);
             console.log(`Message from ${sender}: ${content}`);
         } else {
-            // Помечаем как непрочитанное
             incrementUnread(contacts, relevantChat);
         }
         
-        // Обновляем UI и сохраняем
         updateContactsListUI(contacts, currentChat, selectContact);
         saveChatDataWithDelay();
     };
@@ -177,9 +153,6 @@ function initClient(username: string, connectNow: boolean = true) {
     }
 }
 
-/**
- * Загружает контакты с сервера и объединяет с локальными
- */
 async function loadContacts(): Promise<void> {
     if (!cli) return;
     
@@ -199,36 +172,25 @@ async function loadContacts(): Promise<void> {
     }
 }
 
-/**
- * Выбирает контакт и отображает его историю
- */
 function selectContact(contactName: string): void {
     currentChat = contactName;
     
-    // Очищаем UI сообщений
     clearMessagesUI();
     
-    // Загружаем и отображаем историю сообщений
     const msgs = messageHistory.get(contactName) || [];
     for (const msg of msgs) {
         const isOwn = msg.getSender() === currentUser;
         displayMessage(msg.getContent(), isOwn);
     }
     
-    // Очищаем счетчик непрочитанных
     clearUnread(contacts, contactName);
     
-    // Обновляем UI
     updateContactsListUI(contacts, currentChat, selectContact);
     updateChatTitle(contactName);
     focusTextarea();
 }
 
-/**
- * Начинает новый чат с указанным пользователем
- */
 function startNewChat(username: string): void {
-    // Валидируем имя пользователя
     if (!username || !username.startsWith('@')) {
         updateChatTitle('Имя должно начинаться с @');
         return;
@@ -239,22 +201,16 @@ function startNewChat(username: string): void {
         return;
     }
     
-    // Добавляем в контакты если еще нет
     if (!contacts.has(username)) {
         addContact(contacts, username);
     }
     
-    // Очищаем поле ввода
     clearNewChatUsername();
     
-    // Выбираем контакт
     selectContact(username);
     saveChatDataWithDelay();
 }
 
-/**
- * Добавляет контакт на сервер
- */
 async function addContactViaServer(username: string): Promise<void> {
     if (!cli) {
         updateChatTitle('Клиент не инициализирован');
@@ -287,15 +243,11 @@ async function addContactViaServer(username: string): Promise<void> {
     }
 }
 
-/**
- * Обработчик авто-входа
- */
 async function handleAutoLogin() {
     const cookieUser = getCookie('pulsar_user');
     const cookiePass = getCookie('pulsar_pass');
 
     if (cookieUser && cookiePass) {
-        // Initialize client but don't connect yet — we'll attach auto-login wrapper first
         initClient(cookieUser, false);
         const originalOnOpen = cli!.onOpen;
 
@@ -310,7 +262,6 @@ async function handleAutoLogin() {
                     updateChatTitle(cookieUser);
                     displayMessage("Автовход выполнен!", true);
 
-                    // Вызываем оригинальный обработчик, если есть
                     if (originalOnOpen) {
                         await originalOnOpen();
                     }
@@ -333,16 +284,12 @@ async function handleAutoLogin() {
             }
         };
 
-        // Now connect after wrapper is in place
         cli!.connect();
     } else {
         window.location.href = '/login';
     }
 }
 
-/**
- * Обработчик сохранения профиля
- */
 async function handleSaveProfile() {
     if (!cli) return;
     
@@ -369,11 +316,6 @@ async function handleSaveProfile() {
     }
 }
 
-/**
- * События и обработчики
- */
-
-// Отправка сообщений
 const sendBtn = getUIElement('sendBtn');
 const textarea = getUIElement('textarea');
 
@@ -385,7 +327,6 @@ if (sendBtn && textarea) {
         try {
             cli.send(message, currentChat);
             
-            // Добавляем сообщение в историю
             const msg = new Message(
                 0,
                 message,
@@ -406,7 +347,6 @@ if (sendBtn && textarea) {
         }
     });
 
-    // Отправка при Enter (Shift+Enter для новой строки)
     textarea.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -415,7 +355,6 @@ if (sendBtn && textarea) {
     });
 }
 
-// Профиль
 const profileBtn = getUIElement('profileBtn');
 const profileModalClose = getUIElement('profileModalClose');
 const profileCancelBtn = getUIElement('profileCancelBtn');
@@ -439,7 +378,6 @@ if (profileSaveBtn) {
     profileSaveBtn.addEventListener('click', handleSaveProfile);
 }
 
-// Выход
 const logoutBtn = getUIElement('logoutBtn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
@@ -452,7 +390,6 @@ if (logoutBtn) {
     });
 }
 
-// Поиск контактов
 const contactSearch = getUIElement('contactSearch');
 if (contactSearch) {
     contactSearch.addEventListener('input', () => {
@@ -460,7 +397,6 @@ if (contactSearch) {
     });
 }
 
-// Новый чат
 const newChatBtn = getUIElement('newChatBtn');
 const newChatUsername = getUIElement('newChatUsername');
 
@@ -482,7 +418,6 @@ if (newChatBtn && newChatUsername) {
     });
 }
 
-// Закрытие модального окна профиля при клике вне
 const profileModal = getUIElement('profileModal');
 if (profileModal) {
     profileModal.addEventListener('click', (e) => {
@@ -492,8 +427,5 @@ if (profileModal) {
     });
 }
 
-/**
- * Инициализация приложения
- */
 console.log("Pulsar Web Client initialized");
 handleAutoLogin();

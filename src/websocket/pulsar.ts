@@ -27,7 +27,6 @@ class PulsarWebSocket {
         this.socket.binaryType = "arraybuffer";
 
         this.socket.addEventListener("open", () => {
-            // Reset reconnect attempts on successful open
             this.reconnectAttempts = 0;
             this.onOpen && this.onOpen();
         }); // обработка открытия сокета
@@ -36,10 +35,8 @@ class PulsarWebSocket {
             this.onClose && this.onClose(ev);
             this.socket = null;
             if (this.shouldReconnect) {
-                // exponential backoff for reconnects
                 this.reconnectAttempts++;
                 const interval = Math.min(this.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1), this.maxReconnectInterval);
-                // Only attempt reconnect if shouldReconnect still true at execution time
                 setTimeout(() => {
                     if (this.shouldReconnect) this.connect();
                 }, interval);
