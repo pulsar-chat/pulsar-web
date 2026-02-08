@@ -1,10 +1,6 @@
 import Message from "./message";
 import { PulsarClient } from "./client";
 
-/**
- * Запрашивает историю сообщений с сервера
- * Использует команду !chat <chat> <lines>
- */
 export async function fetchMessageHistoryFromServer(
     cli: PulsarClient,
     contactName: string,
@@ -18,8 +14,6 @@ export async function fetchMessageHistoryFromServer(
             return [];
         }
 
-        // Сервер возвращает сообщения разделённые Unit-separator (ascii 31 = "\u001F")
-        // или Unit/Record separators — пытаемся аккуратно распарсить
         const parts = rsp.split('\u001F');
         const messages: Message[] = [];
 
@@ -40,9 +34,6 @@ export async function fetchMessageHistoryFromServer(
     }
 }
 
-/**
- * Добавляет сообщение в локальную историю
- */
 export function addMessageToHistory(
     messageHistory: Map<string, Message[]>,
     contactName: string,
@@ -56,9 +47,6 @@ export function addMessageToHistory(
     messages.push(message);
 }
 
-/**
- * Получает историю сообщений для контакта
- */
 export function getMessageHistory(
     messageHistory: Map<string, Message[]>,
     contactName: string
@@ -66,9 +54,6 @@ export function getMessageHistory(
     return messageHistory.get(contactName) || [];
 }
 
-/**
- * Удаляет старые сообщения если превышен лимит
- */
 export function pruneOldMessages(
     messageHistory: Map<string, Message[]>,
     maxMessages: number = 50
@@ -80,9 +65,6 @@ export function pruneOldMessages(
     }
 }
 
-/**
- * Очищает историю сообщений для контакта
- */
 export function clearContactHistory(
     messageHistory: Map<string, Message[]>,
     contactName: string
@@ -90,9 +72,6 @@ export function clearContactHistory(
     messageHistory.delete(contactName);
 }
 
-/**
- * Очищает всю историю сообщений
- */
 export function clearAllHistory(messageHistory: Map<string, Message[]>): void {
     messageHistory.clear();
 }

@@ -2,16 +2,12 @@ import { Contact } from "./types";
 import { PulsarClient } from "./client";
 import { getCookie } from "./cookie";
 
-/**
- * Получает список контактов с сервера
- */
-export async function fetchContactsFromServer(cli: PulsarClient): Promise<string[]> {
+export async function fetchContactsFromServer(cli: PulsarClient): Promise<string[]> { // TODO: make this on backend
     try {
         const cookieUser = getCookie('pulsar_user') || '';
         const rsp = await cli.requestRaw(`!contact get ${cookieUser}`);
 
         if (rsp && rsp !== '-') {
-            // Ответ может быть либо одиночным именем, либо списком, разделённым запятыми
             const parts = rsp.indexOf(',') !== -1 ? rsp.split(',') : [rsp];
             const contactNames = parts
                 .map(n => n.trim())

@@ -1,9 +1,6 @@
 import Message from "./message";
 import { Contact, MAX_STORED_MESSAGES } from "./types";
 
-/**
- * Сохраняет контакты в localStorage
- */
 export function saveContactsToStorage(contacts: Map<string, Contact>): void {
     const contactsData = Array.from(contacts.entries()).map(([name, contact]) => ({
         name,
@@ -14,9 +11,6 @@ export function saveContactsToStorage(contacts: Map<string, Contact>): void {
     localStorage.setItem('pulsar_contacts', JSON.stringify(contactsData));
 }
 
-/**
- * Загружает контакты из localStorage
- */
 export function loadContactsFromStorage(): Map<string, Contact> {
     const contacts = new Map<string, Contact>();
     const contactsJson = localStorage.getItem('pulsar_contacts');
@@ -40,13 +34,9 @@ export function loadContactsFromStorage(): Map<string, Contact> {
     return contacts;
 }
 
-/**
- * Сохраняет историю сообщений в localStorage (максимум 50 сообщений на чат)
- */
 export function saveMessagesToStorage(messageHistory: Map<string, Message[]>): void {
     const historyData = Array.from(messageHistory.entries()).map(([chat, messages]) => ({
         chat,
-        // Сохраняем только последние MAX_STORED_MESSAGES сообщений
         messages: messages.slice(-MAX_STORED_MESSAGES).map(msg => ({
             content: msg.getContent(),
             receiver: msg.getReciever(),
@@ -57,9 +47,6 @@ export function saveMessagesToStorage(messageHistory: Map<string, Message[]>): v
     localStorage.setItem('pulsar_message_history', JSON.stringify(historyData));
 }
 
-/**
- * Загружает историю сообщений из localStorage
- */
 export function loadMessagesFromStorage(): Map<string, Message[]> {
     const messageHistory = new Map<string, Message[]>();
     const historyJson = localStorage.getItem('pulsar_message_history');
@@ -89,9 +76,6 @@ export function loadMessagesFromStorage(): Map<string, Message[]> {
     return messageHistory;
 }
 
-/**
- * Добавляет сообщение в историю с ограничением по размеру
- */
 export function addMessageToHistory(
     messageHistory: Map<string, Message[]>,
     contactName: string,
@@ -104,13 +88,8 @@ export function addMessageToHistory(
     const messages = messageHistory.get(contactName)!;
     messages.push(message);
     
-    // Неспешно сохраняем в localStorage (оптимизация)
-    // Будет сохранять только последние 50 сообщений
 }
 
-/**
- * Очищает старые сообщения (оставляет только MAX_STORED_MESSAGES)
- */
 export function pruneMessageHistory(messageHistory: Map<string, Message[]>): void {
     for (const [chat, messages] of messageHistory) {
         if (messages.length > MAX_STORED_MESSAGES) {

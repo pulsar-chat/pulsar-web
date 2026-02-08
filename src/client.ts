@@ -20,9 +20,7 @@ export class PulsarClient {
     }
 
     connect(): void {
-        // Bind websocket callbacks first to avoid race where socket opens before handlers assigned
         this.pws.onOpen = () => {
-            // reset any client-side onOpen handling
             this.onOpen && this.onOpen();
         };
 
@@ -45,7 +43,6 @@ export class PulsarClient {
             this.onMessage && this.onMessage(m);
         };
 
-        // Now establish connection
         this.pws.connect();
     }
 
@@ -110,33 +107,45 @@ export class PulsarClient {
         }
     }
 
-    private async waitForAnswer(req: string): Promise<string> {
-        return new Promise((resolve) => {
-            const check = (): string | null => {
-                for (const a of this.serverAnswers) {
-                    if (a.req === req) return a.rsp;
+    private async waitForAnswer(req: string, timeoutMs: number = 5000): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const findIndex = (): number => {
+                for (let i = this.serverAnswers.length - 1; i >= 0; i--) {
+                    if (this.serverAnswers[i].req === req) return i;
                 }
-                return null;
+                return -1;
             };
 
-            const found = check();
-            if (found !== null) {
-                resolve(found);
+            const useAnswerAt = (idx: number) => {
+                const rsp = this.serverAnswers[idx].rsp;
+                this.serverAnswers.splice(idx, 1);
+                resolve(rsp);
+            };
+
+            const idx = findIndex();
+            if (idx !== -1) {
+                useAnswerAt(idx);
                 return;
             }
 
             const iv = setInterval(() => {
-                const v = check();
-                if (v !== null) {
+                const i = findIndex();
+                if (i !== -1) {
                     clearInterval(iv);
-                    resolve(v);
+                    if (to) clearTimeout(to);
+                    useAnswerAt(i);
                 }
             }, 50);
+
+            const to = setTimeout(() => {
+                clearInterval(iv);
+                reject(new Error(`Request timeout: ${req}`));
+            }, timeoutMs);
         });
     }
 
-    async requestRaw(req: string): Promise<string> {
+    async requestRaw(req: string, timeoutMs: number = 5000): Promise<string> {
         this.send(req, "!server.req");
-        return await this.waitForAnswer(req);
+        return await this.waitForAnswer(req, timeoutMs);
     }
 }
