@@ -1,43 +1,172 @@
+/* =========================
+   CSS Variables (Theme)
+   ========================= */
+
+:root {
+  --color-bg: #0f1220;
+  --color-bg-soft: #171a2d;
+  --color-primary: #6c7cff;
+  --color-primary-hover: #5b6cf0;
+  --color-text: #e6e8f0;
+  --color-text-muted: #a5a8c0;
+  --color-border: #2a2e4a;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+
+  --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* =========================
+   Base
+   ========================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
-  font-family: Inter, Arial, sans-serif;
+  margin: 0;
+  font-family: var(--font-main);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.container {
+  max-width: 1200px;
+  padding: 0 24px;
+  margin: 0 auto;
+}
+
+/* =========================
+   Header
+   ========================= */
+
+.header {
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(15, 18, 32, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+.header__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+}
+
+.header__logo {
+  width: 50px;
+  height: auto;
+}
+
+.header__actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* =========================
+   Buttons
+   ========================= */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn--primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn--primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn--secondary {
+  border-color: var(--color-border);
+  background: transparent;
+}
+
+.btn--large {
+  padding: 14px 24px;
+  font-size: 1rem;
+}
+
+/* =========================
+   Form Inputs
+   ========================= */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(108, 124, 255, 0.05);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* =========================
+   Register Page
+   ========================= */
+
+.register__main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 72px);
+  padding: 40px 0;
 }
 
 .register {
+  width: 100%;
   max-width: 480px;
-  margin: 60px auto;
-  padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  background: #fff;
-}
-
-.register__tabs {
-  display: flex;
-  gap: 0;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #ddd;
-}
-
-.register__tab {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: #999;
-  font-size: 14px;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-}
-
-.register__tab--active {
-  color: #2a7ae2;
-  border-bottom-color: #2a7ae2;
+  padding: 40px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
 }
 
 .register h1 {
-  margin: 0 0 18px 0;
-  font-size: 22px;
+  margin: 0 0 24px 0;
+  font-size: 28px;
+  text-align: center;
 }
 
 .register__form {
@@ -50,38 +179,63 @@ body {
 
 .register__form label {
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .register__form span {
   display: block;
-  margin-bottom: 6px;
-  color: #333;
+  margin-bottom: 8px;
+  color: var(--color-text);
   font-size: 14px;
+  font-weight: 500;
 }
 
 .register__form input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   box-sizing: border-box;
 }
 
 .register__form button {
   width: 100%;
-  padding: 10px;
-  margin-top: 12px;
-  border-radius: 6px;
+  padding: 12px;
+  margin-top: 20px;
+  border-radius: var(--radius-sm);
   border: none;
-  background: #2a7ae2;
+  background: var(--color-primary);
   color: #fff;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.register__form button:hover {
+  background: var(--color-primary-hover);
 }
 
 .register__message {
   margin-top: 12px;
   min-height: 20px;
   font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.register__form p {
+  text-align: center;
+  margin-top: 20px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.register__form p a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.register__form p a:hover {
+  color: var(--color-primary-hover);
 }
