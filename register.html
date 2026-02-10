@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,35 +8,48 @@
     <link rel="stylesheet" href="styles/register.css">
     <link rel="icon" href="/pulsar.ico" />
 </head>
+
 <body>
-    <div class="register">
-        <form id="reg-form" class="register__form register__form--active">
-            <h1>Регистрация</h1>
+    <header class="header">
+        <div class="container header__content">
+            <img href="index.html" class="header__logo" src="pulsar.ico" alt="Pulsar Logo">
+            <div class="header__actions">
+                <a href="/login" class="btn btn--primary">Вход</a>
+            </div>
+        </div>
+    </header>
 
-            <label>
-                <span>Имя пользователя</span>
-                <input id="username" type="text" placeholder="@username" required maxlength="32">
-            </label>
+    <main class="register__main">
+        <div class="register">
+            <form id="reg-form" class="register__form register__form--active">
+                <h1>Регистрация</h1>
 
-            <label>
-                <span>Пароль</span>
-                <input id="password" type="password" placeholder="Пароль" required minlength="2">
-            </label>
+                <label>
+                    <span>Имя пользователя</span>
+                    <input id="username" type="text" placeholder="@username" required maxlength="32">
+                </label>
 
-            <label>
-                <span>Повторите пароль</span>
-                <input id="password2" type="password" placeholder="Повторите пароль" required minlength="2">
-            </label>
+                <label>
+                    <span>Пароль</span>
+                    <input id="password" type="password" placeholder="Пароль" required minlength="2">
+                </label>
 
-            <button type="submit" class="btn">Зарегистрироваться</button>
-            <div id="reg-message" class="register__message" aria-live="polite"></div>
+                <label>
+                    <span>Повторите пароль</span>
+                    <input id="password2" type="password" placeholder="Повторите пароль" required minlength="2">
+                </label>
 
-            <p style="text-align: center; margin-top: 16px; color: #666; font-size: 14px;">
-                Уже есть аккаунт? <a href="/login" style="color: #2a7ae2; text-decoration: none;">Войти</a>
-            </p>
-        </form>
-    </div>
+                <button type="submit" class="btn">Зарегистрироваться</button>
+                <div id="reg-message" class="register__message" aria-live="polite"></div>
+
+                <p>
+                    Уже есть аккаунт? <a href="/login">Войти</a>
+                </p>
+            </form>
+        </div>
+    </main>
 
     <script type="module" src="/src/register.ts"></script>
 </body>
+
 </html>
