@@ -23,7 +23,10 @@ jobs:
         node-version: ${{ matrix.node-version }}
 
     - name: Install Deps
-      run: npm install
+      run: |
+        npm install
+        sudo apt install -y mkcert
+        npm run cert-install
 
     - name: Test
       run: |
