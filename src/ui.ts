@@ -170,7 +170,7 @@ export function getProfileFormData(): any {
         email: emailInput?.value || '',
         realName: realnameInput?.value || '',
         description: descriptionInput?.value || '',
-        birthday: birthdayInput?.value || ''
+        birthday: birthdayInput?.value || '0'
     };
 }
 
