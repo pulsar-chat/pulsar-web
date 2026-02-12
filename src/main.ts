@@ -3,29 +3,34 @@ import { PulsarClient } from "./client";
 import { getCookie, deleteCookie, setCookie } from "./cookie";
 import { PULSAR_URL } from "./config";
 import { AppState, UserProfile, Contact, MAX_STORED_MESSAGES } from "./types";
-import { 
-    loadContactsFromStorage, 
-    saveContactsToStorage, 
-    loadMessagesFromStorage, 
-    saveMessagesToStorage, 
+import {
+    loadContactsFromStorage,
+    saveContactsToStorage,
+    loadMessagesFromStorage,
+    saveMessagesToStorage,
     pruneMessageHistory,
-    addMessageToHistory 
+    addMessageToHistory
 } from "./storage";
-import { 
-    addContact, 
-    fetchContactsFromServer, 
-    addContactToServer, 
+import {
+    addContact,
+    fetchContactsFromServer,
+    addContactToServer,
     removeContactFromServer,
-    updateContactLastMessage, 
-    incrementUnread, 
-    clearUnread 
+    updateContactLastMessage,
+    incrementUnread,
+    clearUnread
 } from "./contacts";
-import { 
-    initUIElements, 
-    getUIElement, 
-    escapeHtml, 
-    displayMessage, 
-    updateChatTitle, 
+import {
+    fetchMessageHistoryFromServer,
+    fetchUnreadMessagesFromServer,
+    fetchMessageByIdFromServer
+} from "./messages";
+import {
+    initUIElements,
+    getUIElement,
+    escapeHtml,
+    displayMessage,
+    updateChatTitle,
     clearMessagesUI,
     updateContactsListUI,
     openProfileModal,
@@ -58,7 +63,7 @@ function saveChatDataWithDelay(): void {
     if (savingTimeout) {
         clearTimeout(savingTimeout);
     }
-    
+
     savingTimeout = setTimeout(() => {
         saveContactsToStorage(contacts);
         saveMessagesToStorage(messageHistory);
@@ -87,6 +92,9 @@ function initClient(username: string, connectNow: boolean = true) {
 
         await loadContacts();
 
+        // Загружаем непрочитанные сообщения
+        await handleUnreadMessages();
+
         if (cli) {
             userProfile = await loadUserProfileFromServer(cli);
         }
@@ -94,7 +102,7 @@ function initClient(username: string, connectNow: boolean = true) {
 
         if (contacts.size > 0) {
             const firstContact = Array.from(contacts.values())[0];
-            selectContact(firstContact.name);
+            await selectContact(firstContact.name);
         } else {
             updateChatTitle("Начните новый чат");
         }
@@ -127,14 +135,14 @@ function initClient(username: string, connectNow: boolean = true) {
         }
 
         const relevantChat = sender === currentUser ? receiver : sender;
-        
+
         if (!contacts.has(relevantChat)) {
             addContact(contacts, relevantChat);
             console.log(`Added new contact: ${relevantChat}`);
         }
-        
+
         addMessageToHistory(messageHistory, relevantChat, msg);
-        
+
         updateContactLastMessage(contacts, relevantChat, content, msg.getTime());
 
         if (sender === currentChat || receiver === currentChat) {
@@ -143,7 +151,7 @@ function initClient(username: string, connectNow: boolean = true) {
         } else {
             incrementUnread(contacts, relevantChat);
         }
-        
+
         updateContactsListUI(contacts, currentChat, selectContact);
         saveChatDataWithDelay();
     };
@@ -155,16 +163,16 @@ function initClient(username: string, connectNow: boolean = true) {
 
 async function loadContacts(): Promise<void> {
     if (!cli) return;
-    
+
     try {
         const serverContacts = await fetchContactsFromServer(cli);
-        
+
         for (const contactName of serverContacts) {
             if (!contacts.has(contactName)) {
                 addContact(contacts, contactName);
             }
         }
-        
+
         updateContactsListUI(contacts, currentChat, selectContact);
         saveChatDataWithDelay();
     } catch (err) {
@@ -172,42 +180,96 @@ async function loadContacts(): Promise<void> {
     }
 }
 
-function selectContact(contactName: string): void {
-    currentChat = contactName;
-    
-    clearMessagesUI();
-    
-    const msgs = messageHistory.get(contactName) || [];
-    for (const msg of msgs) {
-        const isOwn = msg.getSender() === currentUser;
-        displayMessage(msg.getContent(), isOwn);
+/**
+ * Загружает непрочитанные сообщения и обновляет счетчики у контактов
+ */
+async function handleUnreadMessages(): Promise<void> {
+    if (!cli) return;
+
+    try {
+        const unreadMessages = await fetchUnreadMessagesFromServer(cli);
+
+        // Группируем по чатам
+        const unreadByChat = new Map<string, number[]>();
+        for (const unread of unreadMessages) {
+            if (!unreadByChat.has(unread.chat)) {
+                unreadByChat.set(unread.chat, []);
+            }
+            unreadByChat.get(unread.chat)!.push(unread.messageId);
+        }
+
+        // Обновляем счетчики для контактов
+        for (const [chat, _] of unreadByChat) {
+            incrementUnread(contacts, chat);
+        }
+
+        updateContactsListUI(contacts, currentChat, selectContact);
+    } catch (err) {
+        console.error('Failed to handle unread messages:', err);
     }
-    
+}
+
+async function selectContact(contactName: string): Promise<void> {
+    currentChat = contactName;
+
+    clearMessagesUI();
+    updateChatTitle(`Загрузка истории из ${contactName}...`);
+
+    // Загружаем историю с сервера (последние 50 сообщений)
+    if (cli) {
+        try {
+            const serverMessages = await fetchMessageHistoryFromServer(cli, contactName, 50);
+
+            // Обновляем локального хранилища для кэширования
+            if (serverMessages.length > 0) {
+                messageHistory.set(contactName, serverMessages);
+            }
+
+            // Отображаем сообщения
+            for (const msg of serverMessages) {
+                const isOwn = msg.getSender() === currentUser;
+                displayMessage(msg.getContent(), isOwn);
+            }
+        } catch (err) {
+            console.error('Failed to load message history:', err);
+            updateChatTitle(`Ошибка загрузки истории для ${contactName}`);
+        }
+    } else {
+        // Если клиент не инициализирован, используем локальное кэширование
+        const msgs = messageHistory.get(contactName) || [];
+        // Разворачиваем для правильного порядка (старые сверху)
+        const reversedMsgs = [...msgs].reverse();
+        for (const msg of reversedMsgs) {
+            const isOwn = msg.getSender() === currentUser;
+            displayMessage(msg.getContent(), isOwn);
+        }
+    }
+
     clearUnread(contacts, contactName);
-    
+
     updateContactsListUI(contacts, currentChat, selectContact);
     updateChatTitle(contactName);
     focusTextarea();
 }
 
-function startNewChat(username: string): void {
+async function startNewChat(username: string): Promise<void> {
     if (!username || !username.startsWith('@')) {
         updateChatTitle('Имя должно начинаться с @');
         return;
     }
-    
+
     if (username === currentUser) {
         updateChatTitle('Нельзя написать самому себе');
         return;
     }
-    
+
     if (!contacts.has(username)) {
         addContact(contacts, username);
     }
-    
+
     clearNewChatUsername();
-    
-    selectContact(username);
+
+    await selectContact(username);
     saveChatDataWithDelay();
 }
 
@@ -216,17 +278,17 @@ async function addContactViaServer(username: string): Promise<void> {
         updateChatTitle('Клиент не инициализирован');
         return;
     }
-    
+
     if (!username || !username.startsWith('@')) {
         updateChatTitle('Имя должно начинаться с @');
         return;
     }
-    
+
     if (username === currentUser) {
         updateChatTitle('Нельзя добавить самого себя');
         return;
     }
-    
+
     try {
         const success = await addContactToServer(cli, username);
         if (success) {
@@ -292,18 +354,18 @@ async function handleAutoLogin() {
 
 async function handleSaveProfile() {
     if (!cli) return;
-    
+
     const profileData = getProfileFormData();
-    
+
     try {
         const success = await saveProfileToServer(cli, profileData);
-        
+
         if (success) {
             userProfile.email = profileData.email;
             userProfile.realName = profileData.realName;
             userProfile.description = profileData.description;
             userProfile.birthday = profileData.birthday ? parseInt(profileData.birthday) : undefined;
-            
+
             closeProfileModal();
             updateChatTitle('Профиль сохранен!');
         } else {
@@ -326,7 +388,7 @@ if (sendBtn && textarea) {
 
         try {
             cli.send(message, currentChat);
-            
+
             const msg = new Message(
                 0,
                 message,
@@ -335,11 +397,11 @@ if (sendBtn && textarea) {
                 Math.floor(Date.now() / 1000)
             );
             addMessageToHistory(messageHistory, currentChat, msg);
-            
+
             displayMessage(message, true);
             clearTextarea();
             focusTextarea();
-            
+
             saveChatDataWithDelay();
         } catch (err) {
             console.error('Send error:', err);
@@ -407,7 +469,7 @@ if (newChatBtn && newChatUsername) {
             startNewChat(username);
         }
     });
-    
+
     newChatUsername.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             const username = getNewChatUsername();

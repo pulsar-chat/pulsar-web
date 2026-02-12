@@ -1,6 +1,11 @@
 import Message from "./message";
 import { PulsarClient } from "./client";
 
+export interface UnreadMessage {
+    chat: string;
+    messageId: number;
+}
+
 export async function fetchMessageHistoryFromServer(
     cli: PulsarClient,
     contactName: string,
@@ -27,13 +32,75 @@ export async function fetchMessageHistoryFromServer(
             }
         }
 
-        return messages;
+        // Разворачиваем сообщения (старые сверху, новые снизу)
+        return messages.reverse();
     } catch (err) {
         console.error('Failed to fetch message history:', err);
         return [];
     }
 }
 
+/**
+ * Получить список непрочитанных сообщений с сервера
+ */
+export async function fetchUnreadMessagesFromServer(
+    cli: PulsarClient
+): Promise<UnreadMessage[]> {
+    try {
+        const rsp = await cli.requestRaw('!getUnread');
+
+        if (!rsp || rsp === '-') {
+            return [];
+        }
+
+        const unreadMessages: UnreadMessage[] = [];
+        const records = rsp.split(';');
+
+        for (const record of records) {
+            const trimmed = record.trim();
+            if (!trimmed) continue;
+
+            const parts = trimmed.split('|');
+            if (parts.length === 2) {
+                const chat = parts[0].trim();
+                const messageId = parseInt(parts[1], 10);
+
+                if (!isNaN(messageId)) {
+                    unreadMessages.push({ chat, messageId });
+                }
+            }
+        }
+
+        return unreadMessages;
+    } catch (err) {
+        console.error('Failed to fetch unread messages:', err);
+        return [];
+    }
+}
+
+/**
+ * Получить отдельное сообщение по ID
+ */
+export async function fetchMessageByIdFromServer(
+    cli: PulsarClient,
+    chat: string,
+    messageId: number
+): Promise<Message | null> {
+    try {
+        const cmd = `!msg ${chat} ${messageId}`;
+        const rsp = await cli.requestRaw(cmd);
+
+        if (!rsp || rsp === '-') {
+            return null;
+        }
+
+        const msg = Message.fromPayload(rsp);
+        return msg;
+    } catch (err) {
+        console.error('Failed to fetch message by ID:', err);
+        return null;
+    }
+}
 export function addMessageToHistory(
     messageHistory: Map<string, Message[]>,
     contactName: string,
@@ -42,7 +109,7 @@ export function addMessageToHistory(
     if (!messageHistory.has(contactName)) {
         messageHistory.set(contactName, []);
     }
-    
+
     const messages = messageHistory.get(contactName)!;
     messages.push(message);
 }
