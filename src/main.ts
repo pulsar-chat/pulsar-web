@@ -348,7 +348,7 @@ if (sendBtn && textarea) {
     });
 
     textarea.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === 'Enter') {
             e.preventDefault();
             sendBtn.click();
         }
