@@ -383,7 +383,7 @@ const textarea = getUIElement('textarea');
 
 if (sendBtn && textarea) {
     sendBtn.addEventListener('click', async () => {
-        const message = getTextareaValue();
+        const message = getTextareaValue().trim().slice(0, 1023);
         if (!message || !cli) return;
 
         try {
