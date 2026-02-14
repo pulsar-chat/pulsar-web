@@ -2,16 +2,18 @@ import { Contact } from "./types";
 import { PulsarClient } from "./client";
 import { getCookie } from "./cookie";
 
-export async function fetchContactsFromServer(cli: PulsarClient): Promise<string[]> { // TODO: make this on backend
+export async function fetchContactsFromServer(cli: PulsarClient): Promise<string[]> {
     try {
         const cookieUser = getCookie('pulsar_user') || '';
-        const rsp = await cli.requestRaw(`!contact get ${cookieUser}`);
+        const rsp = await cli.requestRaw(`!contact lst get`);
 
         if (rsp && rsp !== '-') {
-            const parts = rsp.indexOf(',') !== -1 ? rsp.split(',') : [rsp];
+            const parts = rsp.indexOf(' ') !== -1 ? rsp.split(' ') : [rsp];
             const contactNames = parts
                 .map(n => n.trim())
-                .filter(n => n && n.startsWith('@'));
+                .filter(n => n && n.endsWith('.chat'))
+                .map(n => n.slice(0, -5))
+                .map(n => `@${n}`);
             return contactNames;
         }
 
