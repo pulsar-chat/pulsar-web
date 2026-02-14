@@ -122,6 +122,7 @@ function initClient(username: string, connectNow: boolean = true) {
         const sender = msg.getSender();
         const receiver = msg.getReciever();
         const content = msg.getContent();
+        const timestamp = msg.getTime();
 
         if (sender === "!server.msg") {
             console.log("Server response:", content);
@@ -143,10 +144,10 @@ function initClient(username: string, connectNow: boolean = true) {
 
         addMessageToHistory(messageHistory, relevantChat, msg);
 
-        updateContactLastMessage(contacts, relevantChat, content, msg.getTime());
+        updateContactLastMessage(contacts, relevantChat, content, timestamp);
 
         if (sender === currentChat || receiver === currentChat) {
-            displayMessage(content, sender === currentUser);
+            displayMessage(content, timestamp, sender === currentUser);
             console.log(`Message from ${sender}: ${content}`);
         } else {
             incrementUnread(contacts, relevantChat);
@@ -228,7 +229,7 @@ async function selectContact(contactName: string): Promise<void> {
             // Отображаем сообщения
             for (const msg of serverMessages) {
                 const isOwn = msg.getSender() === currentUser;
-                displayMessage(msg.getContent(), isOwn);
+                displayMessage(msg.getContent(), msg.getTime(), isOwn);
             }
         } catch (err) {
             console.error('Failed to load message history:', err);
@@ -241,7 +242,7 @@ async function selectContact(contactName: string): Promise<void> {
         const reversedMsgs = [...msgs].reverse();
         for (const msg of reversedMsgs) {
             const isOwn = msg.getSender() === currentUser;
-            displayMessage(msg.getContent(), isOwn);
+            displayMessage(msg.getContent(), msg.getTime(), isOwn);
         }
     }
 
@@ -322,7 +323,7 @@ async function handleAutoLogin() {
                     console.log('Auto-login successful:', cookieUser);
                     updateProfileName(cookieUser);
                     updateChatTitle(cookieUser);
-                    displayMessage("Автовход выполнен!", true);
+                    displayMessage("Автовход выполнен!", Math.floor(Date.now() / 1000), true);
 
                     if (originalOnOpen) {
                         await originalOnOpen();
@@ -332,7 +333,7 @@ async function handleAutoLogin() {
                     deleteCookie('pulsar_user');
                     deleteCookie('pulsar_pass');
                     if (cli) cli.disconnect();
-                    displayMessage("Сеанс истек. Пожалуйста, войдите снова.", false);
+                    displayMessage("Сеанс истек. Пожалуйста, войдите снова.", Math.floor(Date.now() / 1000), false);
                     setTimeout(() => {
                         window.location.href = '/login';
                     }, 2000);
@@ -398,14 +399,14 @@ if (sendBtn && textarea) {
             );
             addMessageToHistory(messageHistory, currentChat, msg);
 
-            displayMessage(message, true);
+            displayMessage(message, Math.floor(Date.now() / 1000), true);
             clearTextarea();
             focusTextarea();
 
             saveChatDataWithDelay();
         } catch (err) {
             console.error('Send error:', err);
-            displayMessage(`Ошибка: ${err}`, false);
+            displayMessage(`Ошибка: ${err}`, Math.floor(Date.now() / 1000), false);
         }
     });
 
@@ -489,5 +490,20 @@ if (profileModal) {
     });
 }
 
+const clockModule = getUIElement('clockModule');
+
+function updateClocks() {
+    const helper = () => {
+        if (!clockModule) return;
+
+        clockModule.innerText = new Date().toLocaleTimeString();
+    };
+
+    helper();
+
+    setInterval(helper, 1000);
+}
+
 console.log("Pulsar Web Client initialized");
 handleAutoLogin();
+updateClocks();

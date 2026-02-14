@@ -17,6 +17,7 @@ const uiElements = {
     contactSearch: null as HTMLInputElement | null,
     newChatUsername: null as HTMLInputElement | null,
     newChatBtn: null as HTMLButtonElement | null,
+    clockModule: null as HTMLSpanElement | null
 };
 
 export function initUIElements(): void {
@@ -35,6 +36,7 @@ export function initUIElements(): void {
     uiElements.contactSearch = document.getElementById('contact-search') as HTMLInputElement;
     uiElements.newChatUsername = document.getElementById('new-chat-username') as HTMLInputElement;
     uiElements.newChatBtn = document.getElementById('new-chat-btn') as HTMLButtonElement;
+    uiElements.clockModule = document.getElementById('clock-module') as HTMLSpanElement;
 }
 
 export function getUIElement<K extends keyof typeof uiElements>(key: K): typeof uiElements[K] {
@@ -52,14 +54,14 @@ export function escapeHtml(text: string): string {
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
-export function displayMessage(content: string, isOwn: boolean = false): void {
+export function displayMessage(content: string, time: number, isOwn: boolean = false): void {
     const messagesContainer = getUIElement('messagesContainer');
     if (!messagesContainer) return;
 
     const msgDiv = document.createElement('div');
     msgDiv.className = `msg ${isOwn ? 'msg--right' : 'msg--left'}`;
 
-    const timestamp = new Date().toLocaleTimeString();
+    const timestamp = new Date(time * 1000).toLocaleTimeString();
     const msgBubble = document.createElement('div');
     msgBubble.className = 'msg__bubble';
     msgBubble.innerHTML = `${escapeHtml(content)}<br><span class="msg__time">${timestamp}</span>`;
