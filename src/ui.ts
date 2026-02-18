@@ -1,5 +1,6 @@
-import { Contact } from "./types";
+import { Contact, UserProfile } from "./types";
 import { getSortedContacts } from "./contacts";
+import { formatBirthday } from "./profile";
 
 const uiElements = {
     messagesContainer: null as HTMLDivElement | null,
@@ -17,7 +18,15 @@ const uiElements = {
     contactSearch: null as HTMLInputElement | null,
     newChatUsername: null as HTMLInputElement | null,
     newChatBtn: null as HTMLButtonElement | null,
-    clockModule: null as HTMLSpanElement | null
+    clockModule: null as HTMLSpanElement | null,
+    viewProfileModal: null as HTMLDivElement | null,
+    viewProfileModalClose: null as HTMLButtonElement | null,
+    viewProfileCloseBtn: null as HTMLButtonElement | null,
+    viewProfileUsername: null as HTMLInputElement | null,
+    viewProfileEmail: null as HTMLInputElement | null,
+    viewProfileRealname: null as HTMLInputElement | null,
+    viewProfileDescription: null as HTMLTextAreaElement | null,
+    viewProfileBirthday: null as HTMLInputElement | null
 };
 
 export function initUIElements(): void {
@@ -37,6 +46,14 @@ export function initUIElements(): void {
     uiElements.newChatUsername = document.getElementById('new-chat-username') as HTMLInputElement;
     uiElements.newChatBtn = document.getElementById('new-chat-btn') as HTMLButtonElement;
     uiElements.clockModule = document.getElementById('clock-module') as HTMLSpanElement;
+    uiElements.viewProfileModal = document.getElementById('view-profile-modal') as HTMLDivElement;
+    uiElements.viewProfileModalClose = document.getElementById('view-profile-modal-close') as HTMLButtonElement;
+    uiElements.viewProfileCloseBtn = document.getElementById('view-profile-close') as HTMLButtonElement;
+    uiElements.viewProfileUsername = document.getElementById('view-profile-username') as HTMLInputElement;
+    uiElements.viewProfileEmail = document.getElementById('view-profile-email') as HTMLInputElement;
+    uiElements.viewProfileRealname = document.getElementById('view-profile-realname') as HTMLInputElement;
+    uiElements.viewProfileDescription = document.getElementById('view-profile-description') as HTMLTextAreaElement;
+    uiElements.viewProfileBirthday = document.getElementById('view-profile-birthday') as HTMLInputElement;
 }
 
 export function getUIElement<K extends keyof typeof uiElements>(key: K): typeof uiElements[K] {
@@ -89,24 +106,25 @@ export function clearMessagesUI(): void {
 export function updateContactsListUI(
     contacts: Map<string, Contact>,
     currentChat: string,
-    onContactClick: (contactName: string) => void
+    onContactClick: (contactName: string) => void,
+    onProfileClick: (contactName: string) => void
 ): void {
     const contactsList = getUIElement('contactsList');
     const contactSearch = getUIElement('contactSearch');
-    
+
     if (!contactsList) return;
-    
+
     const searchQuery = contactSearch?.value.toLowerCase() || '';
     const sortedContacts = getSortedContacts(contacts, searchQuery);
-    
+
     let html = '';
-    
+
     for (const contact of sortedContacts) {
         const isActive = contact.name === currentChat ? ' contact--active' : '';
         const lastMsg = contact.lastMessage || 'Нет сообщений';
-        const unreadBadge = contact.unread ? 
+        const unreadBadge = contact.unread ?
             `<span class="contact__badge">${contact.unread}</span>` : '';
-        
+
         html += `
             <div class="contact${isActive}" data-contact="${contact.name}">
                 <div class="contact__avatar">${contact.name[1] || '@'}</div>
@@ -118,13 +136,13 @@ export function updateContactsListUI(
             </div>
         `;
     }
-    
+
     if (sortedContacts.length === 0) {
         html = '<div style="padding: 20px; text-align: center; color: var(--color-text-muted);">Нет контактов</div>';
     }
-    
+
     contactsList.innerHTML = html;
-    
+
     const contactElements = contactsList.querySelectorAll('.contact');
     contactElements.forEach(el => {
         el.addEventListener('click', () => {
@@ -133,25 +151,40 @@ export function updateContactsListUI(
                 onContactClick(contactName);
             }
         });
+
+        // Add click handler for profile view on name/avatar
+        const avatarEl = el.querySelector('.contact__avatar');
+        const nameEl = el.querySelector('.contact__name');
+
+        const handleProfileClick = (e: Event) => {
+            e.stopPropagation();
+            const contactName = el.getAttribute('data-contact');
+            if (contactName) {
+                onProfileClick(contactName);
+            }
+        };
+
+        if (avatarEl) avatarEl.addEventListener('click', handleProfileClick);
+        if (nameEl) nameEl.addEventListener('click', handleProfileClick);
     });
 }
 
 export function openProfileModal(currentUser: string, userProfile: any): void {
     const profileModal = getUIElement('profileModal');
     if (!profileModal) return;
-    
+
     const usernameInput = document.getElementById('profile-username') as HTMLInputElement;
     const emailInput = document.getElementById('profile-email') as HTMLInputElement;
     const realnameInput = document.getElementById('profile-realname') as HTMLInputElement;
     const descriptionInput = document.getElementById('profile-description') as HTMLTextAreaElement;
     const birthdayInput = document.getElementById('profile-birthday') as HTMLInputElement;
-    
+
     if (usernameInput) usernameInput.value = currentUser;
     if (emailInput) emailInput.value = userProfile.email || '';
     if (realnameInput) realnameInput.value = userProfile.realName || '';
     if (descriptionInput) descriptionInput.value = userProfile.description || '';
     if (birthdayInput) birthdayInput.value = (userProfile.birthday || '').toString();
-    
+
     profileModal.classList.add('modal--active');
 }
 
@@ -162,12 +195,38 @@ export function closeProfileModal(): void {
     }
 }
 
+export function openViewProfileModal(username: string, userProfile: UserProfile): void {
+    const viewProfileModal = getUIElement('viewProfileModal');
+    if (!viewProfileModal) return;
+
+    const usernameInput = getUIElement('viewProfileUsername');
+    const emailInput = getUIElement('viewProfileEmail');
+    const realnameInput = getUIElement('viewProfileRealname');
+    const descriptionInput = getUIElement('viewProfileDescription');
+    const birthdayInput = getUIElement('viewProfileBirthday');
+
+    if (usernameInput) usernameInput.value = username;
+    if (emailInput) emailInput.value = userProfile.email || '';
+    if (realnameInput) realnameInput.value = userProfile.realName || '';
+    if (descriptionInput) descriptionInput.value = userProfile.description || '';
+    if (birthdayInput) birthdayInput.value = formatBirthday(userProfile.birthday);
+
+    viewProfileModal.classList.add('modal--active');
+}
+
+export function closeViewProfileModal(): void {
+    const viewProfileModal = getUIElement('viewProfileModal');
+    if (viewProfileModal) {
+        viewProfileModal.classList.remove('modal--active');
+    }
+}
+
 export function getProfileFormData(): any {
     const emailInput = document.getElementById('profile-email') as HTMLInputElement;
     const realnameInput = document.getElementById('profile-realname') as HTMLInputElement;
     const descriptionInput = document.getElementById('profile-description') as HTMLTextAreaElement;
     const birthdayInput = document.getElementById('profile-birthday') as HTMLInputElement;
-    
+
     return {
         email: emailInput?.value || '',
         realName: realnameInput?.value || '',

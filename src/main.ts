@@ -42,11 +42,14 @@ import {
     getTextareaValue,
     getNewChatUsername,
     clearNewChatUsername,
-    getContactSearchQuery
+    getContactSearchQuery,
+    openViewProfileModal,
+    closeViewProfileModal
 } from "./ui";
 import {
     loadUserProfileFromServer,
-    saveProfileToServer
+    saveProfileToServer,
+    loadOtherUserProfileFromServer
 } from "./profile";
 
 initUIElements();
@@ -153,7 +156,7 @@ function initClient(username: string, connectNow: boolean = true) {
             incrementUnread(contacts, relevantChat);
         }
 
-        updateContactsListUI(contacts, currentChat, selectContact);
+        updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
         saveChatDataWithDelay();
     };
 
@@ -174,7 +177,7 @@ async function loadContacts(): Promise<void> {
             }
         }
 
-        updateContactsListUI(contacts, currentChat, selectContact);
+        updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
         saveChatDataWithDelay();
     } catch (err) {
         console.error('Failed to load contacts:', err);
@@ -204,7 +207,7 @@ async function handleUnreadMessages(): Promise<void> {
             incrementUnread(contacts, chat);
         }
 
-        updateContactsListUI(contacts, currentChat, selectContact);
+        updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
     } catch (err) {
         console.error('Failed to handle unread messages:', err);
     }
@@ -248,9 +251,21 @@ async function selectContact(contactName: string): Promise<void> {
 
     clearUnread(contacts, contactName);
 
-    updateContactsListUI(contacts, currentChat, selectContact);
+    updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
     updateChatTitle(contactName);
     focusTextarea();
+}
+
+async function viewProfile(contactName: string): Promise<void> {
+    if (!cli) return;
+
+    try {
+        const profile = await loadOtherUserProfileFromServer(cli, contactName);
+        openViewProfileModal(contactName, profile);
+    } catch (err) {
+        console.error('Failed to load profile:', err);
+        updateChatTitle('Ошибка загрузки профиля');
+    }
 }
 
 async function startNewChat(username: string): Promise<void> {
@@ -294,7 +309,7 @@ async function addContactViaServer(username: string): Promise<void> {
         const success = await addContactToServer(cli, username);
         if (success) {
             addContact(contacts, username);
-            updateContactsListUI(contacts, currentChat, selectContact);
+            updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
             saveChatDataWithDelay();
             updateChatTitle(`Контакт ${username} добавлен!`);
         } else {
@@ -456,7 +471,7 @@ if (logoutBtn) {
 const contactSearch = getUIElement('contactSearch');
 if (contactSearch) {
     contactSearch.addEventListener('input', () => {
-        updateContactsListUI(contacts, currentChat, selectContact);
+        updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
     });
 }
 
@@ -486,6 +501,26 @@ if (profileModal) {
     profileModal.addEventListener('click', (e) => {
         if (e.target === profileModal) {
             closeProfileModal();
+        }
+    });
+}
+
+const viewProfileModal = getUIElement('viewProfileModal');
+const viewProfileModalClose = getUIElement('viewProfileModalClose');
+const viewProfileCloseBtn = getUIElement('viewProfileCloseBtn');
+
+if (viewProfileModalClose) {
+    viewProfileModalClose.addEventListener('click', closeViewProfileModal);
+}
+
+if (viewProfileCloseBtn) {
+    viewProfileCloseBtn.addEventListener('click', closeViewProfileModal);
+}
+
+if (viewProfileModal) {
+    viewProfileModal.addEventListener('click', (e) => {
+        if (e.target === viewProfileModal) {
+            closeViewProfileModal();
         }
     });
 }

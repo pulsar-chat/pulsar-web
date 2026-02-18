@@ -128,6 +128,7 @@
     justify-content: center;
     color: var(--color-text-muted);
     flex-shrink: 0;
+    cursor: pointer;
 }
 
 .contact__meta {
@@ -139,6 +140,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    cursor: pointer;
 }
 
 .contact__last {
