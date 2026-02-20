@@ -1,2 +1,5 @@
-# pulsar-web
-The HTML and TypeScript behind the scenes of Pulsar Messenger
+# Pulsar Web
+Полный исходный код веб страницы нашего мессенджера
+
+# Как я могу помочь разработке?
+Вы можете вносить изменения следуя правилам, которые указаны [здесь](contributing.md)
