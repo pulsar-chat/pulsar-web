@@ -62,7 +62,7 @@ export function loadMessagesFromStorage(): Map<string, Message[]> {
                         msgData.content,
                         msgData.receiver,
                         msgData.sender,
-                        msgData.timestamp || Math.floor(Date.now() / 1000)
+                        msgData.timestamp /*|| Math.floor(Date.now() / 1000)*/
                     );
                     messages.push(msg);
                 }

@@ -66,7 +66,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     window.location.href = '/client';
                 }, 800);
             } else {
-                showMessage(`Ошибка входа: ${rsp}`, true);
+                if (rsp === 'fail_username') {
+                    showMessage(`Ошибка входа: Аккаунта с этим именем нет`, true);
+                }
+                if (rsp === 'fail_password') {
+                    showMessage(`Ошибка входа: Неверный пароль`, true);
+                }
             }
         } catch (err: any) {
             showMessage('Не удалось войти: ' + (err?.message || err), true);

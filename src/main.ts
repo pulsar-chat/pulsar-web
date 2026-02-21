@@ -42,11 +42,14 @@ import {
     getTextareaValue,
     getNewChatUsername,
     clearNewChatUsername,
-    getContactSearchQuery
+    getContactSearchQuery,
+    openViewProfileModal,
+    closeViewProfileModal
 } from "./ui";
 import {
     loadUserProfileFromServer,
-    saveProfileToServer
+    saveProfileToServer,
+    loadOtherUserProfileFromServer
 } from "./profile";
 
 initUIElements();
@@ -100,12 +103,7 @@ function initClient(username: string, connectNow: boolean = true) {
         }
         updateProfileName(currentUser);
 
-        if (contacts.size > 0) {
-            const firstContact = Array.from(contacts.values())[0];
-            await selectContact(firstContact.name);
-        } else {
-            updateChatTitle("Начните новый чат");
-        }
+        updateChatTitle("Начните новый чат");
     };
 
     cli.onClose = () => {
@@ -122,6 +120,7 @@ function initClient(username: string, connectNow: boolean = true) {
         const sender = msg.getSender();
         const receiver = msg.getReciever();
         const content = msg.getContent();
+        const timestamp = msg.getTime();
 
         if (sender === "!server.msg") {
             console.log("Server response:", content);
@@ -143,16 +142,16 @@ function initClient(username: string, connectNow: boolean = true) {
 
         addMessageToHistory(messageHistory, relevantChat, msg);
 
-        updateContactLastMessage(contacts, relevantChat, content, msg.getTime());
+        updateContactLastMessage(contacts, relevantChat, content, timestamp);
 
         if (sender === currentChat || receiver === currentChat) {
-            displayMessage(content, sender === currentUser);
+            displayMessage(content, timestamp, sender === currentUser);
             console.log(`Message from ${sender}: ${content}`);
         } else {
             incrementUnread(contacts, relevantChat);
         }
 
-        updateContactsListUI(contacts, currentChat, selectContact);
+        updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
         saveChatDataWithDelay();
     };
 
@@ -173,7 +172,7 @@ async function loadContacts(): Promise<void> {
             }
         }
 
-        updateContactsListUI(contacts, currentChat, selectContact);
+        updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
         saveChatDataWithDelay();
     } catch (err) {
         console.error('Failed to load contacts:', err);
@@ -203,9 +202,24 @@ async function handleUnreadMessages(): Promise<void> {
             incrementUnread(contacts, chat);
         }
 
-        updateContactsListUI(contacts, currentChat, selectContact);
+        updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
     } catch (err) {
         console.error('Failed to handle unread messages:', err);
+    }
+}
+
+function updateChatContactInfo(contactName: string): void {
+    const contactInfoEl = document.getElementById('chat-contact-info');
+    if (!contactInfoEl) return;
+
+    const avatar = contactInfoEl.querySelector('.chat__contact-avatar') as HTMLElement;
+    const name = contactInfoEl.querySelector('.chat__contact-name') as HTMLElement;
+
+    if (avatar) {
+        avatar.textContent = contactName.charAt(0).toUpperCase();
+    }
+    if (name) {
+        name.textContent = contactName;
     }
 }
 
@@ -228,7 +242,7 @@ async function selectContact(contactName: string): Promise<void> {
             // Отображаем сообщения
             for (const msg of serverMessages) {
                 const isOwn = msg.getSender() === currentUser;
-                displayMessage(msg.getContent(), isOwn);
+                displayMessage(msg.getContent(), msg.getTime(), isOwn);
             }
         } catch (err) {
             console.error('Failed to load message history:', err);
@@ -241,15 +255,28 @@ async function selectContact(contactName: string): Promise<void> {
         const reversedMsgs = [...msgs].reverse();
         for (const msg of reversedMsgs) {
             const isOwn = msg.getSender() === currentUser;
-            displayMessage(msg.getContent(), isOwn);
+            displayMessage(msg.getContent(), msg.getTime(), isOwn);
         }
     }
 
     clearUnread(contacts, contactName);
 
-    updateContactsListUI(contacts, currentChat, selectContact);
+    updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
     updateChatTitle(contactName);
+    updateChatContactInfo(contactName);
     focusTextarea();
+}
+
+async function viewProfile(contactName: string): Promise<void> {
+    if (!cli) return;
+
+    try {
+        const profile = await loadOtherUserProfileFromServer(cli, contactName);
+        openViewProfileModal(contactName, profile);
+    } catch (err) {
+        console.error('Failed to load profile:', err);
+        updateChatTitle('Ошибка загрузки профиля');
+    }
 }
 
 async function startNewChat(username: string): Promise<void> {
@@ -293,7 +320,7 @@ async function addContactViaServer(username: string): Promise<void> {
         const success = await addContactToServer(cli, username);
         if (success) {
             addContact(contacts, username);
-            updateContactsListUI(contacts, currentChat, selectContact);
+            updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
             saveChatDataWithDelay();
             updateChatTitle(`Контакт ${username} добавлен!`);
         } else {
@@ -322,7 +349,12 @@ async function handleAutoLogin() {
                     console.log('Auto-login successful:', cookieUser);
                     updateProfileName(cookieUser);
                     updateChatTitle(cookieUser);
-                    displayMessage("Автовход выполнен!", true);
+                    displayMessage("Автовход выполнен!", Math.floor(Date.now() / 1000), true);
+
+                    // Open menu on mobile devices
+                    if (window.innerWidth <= 768) {
+                        openMobileMenu();
+                    }
 
                     if (originalOnOpen) {
                         await originalOnOpen();
@@ -332,7 +364,7 @@ async function handleAutoLogin() {
                     deleteCookie('pulsar_user');
                     deleteCookie('pulsar_pass');
                     if (cli) cli.disconnect();
-                    displayMessage("Сеанс истек. Пожалуйста, войдите снова.", false);
+                    displayMessage("Сеанс истек. Пожалуйста, войдите снова.", Math.floor(Date.now() / 1000), false);
                     setTimeout(() => {
                         window.location.href = '/login';
                     }, 2000);
@@ -398,14 +430,14 @@ if (sendBtn && textarea) {
             );
             addMessageToHistory(messageHistory, currentChat, msg);
 
-            displayMessage(message, true);
+            displayMessage(message, Math.floor(Date.now() / 1000), true);
             clearTextarea();
             focusTextarea();
 
             saveChatDataWithDelay();
         } catch (err) {
             console.error('Send error:', err);
-            displayMessage(`Ошибка: ${err}`, false);
+            displayMessage(`Ошибка: ${err}`, Math.floor(Date.now() / 1000), false);
         }
     });
 
@@ -455,7 +487,7 @@ if (logoutBtn) {
 const contactSearch = getUIElement('contactSearch');
 if (contactSearch) {
     contactSearch.addEventListener('input', () => {
-        updateContactsListUI(contacts, currentChat, selectContact);
+        updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
     });
 }
 
@@ -489,5 +521,109 @@ if (profileModal) {
     });
 }
 
+const viewProfileModal = getUIElement('viewProfileModal');
+const viewProfileModalClose = getUIElement('viewProfileModalClose');
+const viewProfileCloseBtn = getUIElement('viewProfileCloseBtn');
+
+if (viewProfileModalClose) {
+    viewProfileModalClose.addEventListener('click', closeViewProfileModal);
+}
+
+if (viewProfileCloseBtn) {
+    viewProfileCloseBtn.addEventListener('click', closeViewProfileModal);
+}
+
+if (viewProfileModal) {
+    viewProfileModal.addEventListener('click', (e) => {
+        if (e.target === viewProfileModal) {
+            closeViewProfileModal();
+        }
+    });
+}
+
+const clockModule = getUIElement('clockModule');
+
+function updateClocks() {
+    const helper = () => {
+        if (!clockModule) return;
+
+        clockModule.innerText = new Date().toLocaleTimeString();
+    };
+
+    helper();
+
+    setInterval(helper, 1000);
+}
+
+// Mobile menu toggle functionality
+function toggleMobileMenu() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar && overlay) {
+        const isActive = sidebar.classList.contains('sidebar--active');
+        if (isActive) {
+            closeMobileMenu();
+        } else {
+            openMobileMenu();
+        }
+    }
+}
+
+function openMobileMenu() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar) sidebar.classList.add('sidebar--active');
+    if (overlay) overlay.classList.add('sidebar__overlay--active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeMobileMenu() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar) sidebar.classList.remove('sidebar--active');
+    if (overlay) overlay.classList.remove('sidebar__overlay--active');
+    document.body.style.overflow = '';
+}
+
+const menuToggle = document.getElementById('menu-toggle');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+if (menuToggle) {
+    menuToggle.addEventListener('click', toggleMobileMenu);
+}
+
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', closeMobileMenu);
+}
+
+// Close menu when a contact is clicked or action buttons are used
+document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    
+    // Close menu when selecting a contact
+    const contact = target.closest('.contact');
+    if (contact) {
+        closeMobileMenu();
+        return;
+    }
+    
+    // Close menu when logout button is clicked
+    if (target.id === 'logout-btn') {
+        closeMobileMenu();
+        return;
+    }
+
+    // Open profile when clicking on chat contact info in header
+    const chatContactInfo = target.closest('#chat-contact-info');
+    if (chatContactInfo && currentChat) {
+        viewProfile(currentChat);
+        return;
+    }
+});
+
 console.log("Pulsar Web Client initialized");
 handleAutoLogin();
+updateClocks();

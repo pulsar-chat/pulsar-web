@@ -7,26 +7,32 @@
     <title>Pulsar Client</title>
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/client.css">
-    
+
     <link rel="icon" href="/pulsar.ico" />
 </head>
 
 <body>
     <div class="pulsar-app">
+        <div class="sidebar__overlay" id="sidebar-overlay"></div>
         <aside class="sidebar">
             <div class="sidebar__top">
-                <div class="logo">
+                <a class="logo" href="/">
                     <img class="logo__icon" src="/pulsar.ico"></img>
                     <div class="logo__title">Pulsar</div>
+                </a>
+                <div class="clock">
+                    <span id="clock-module">CLOCK</span>
                 </div>
             </div>
 
             <div class="contacts-wrapper">
                 <div class="contacts__search">
-                    <input type="text" id="contact-search" class="contacts__search-input" placeholder="Поиск контактов...">
+                    <input type="text" id="contact-search" class="contacts__search-input"
+                        placeholder="Поиск контактов...">
                 </div>
                 <div class="contacts__new-chat">
-                    <input type="text" id="new-chat-username" class="contacts__new-chat-input" placeholder="@username для нового чата">
+                    <input type="text" id="new-chat-username" class="contacts__new-chat-input"
+                        placeholder="@username для нового чата">
                     <button class="btn btn--primary btn--small" id="new-chat-btn" title="Начать чат">↓</button>
                 </div>
                 <div class="contacts" id="contacts-list">
@@ -39,12 +45,12 @@
                     <div class="profile__avatar">@</div>
                     <div class="profile__info">
                         <div class="profile__name" id="profile-name">@browser</div>
-                        <div class="profile__handle">#профиль</div>
+                        <div class="profile__handle">профиль</div>
                     </div>
                 </div>
                 <div class="sidebar__actions">
                     <button type="button" class="btn btn--ghost" id="settings-btn" title="Параметры">⚙</button>
-                    <button type="button" class="btn btn--ghost" id="logout-btn" title="Выход">🚪</button>
+                    <button type="button" class="btn btn--ghost" id="logout-btn" title="Выход">Выход</button>
                 </div>
             </div>
         </aside>
@@ -52,10 +58,15 @@
         <main class="chat">
             <header class="chat__header">
                 <div class="chat__header-left">
+                    <button class="chat__menu-toggle" id="menu-toggle" title="Меню">☰</button>
                     <div class="chat__title">@user_home</div>
+                    <div class="chat__contact-info" id="chat-contact-info">
+                        <div class="chat__contact-avatar">@</div>
+                        <div class="chat__contact-name">@user_home</div>
+                    </div>
                 </div>
                 <div class="chat__header-right">
-                    <div class="chat__avatar">🙂</div>
+                    <div class="chat__avatar"></div>
                 </div>
             </header>
 
@@ -103,6 +114,43 @@
             <div class="modal__footer">
                 <button class="btn btn--primary" id="profile-save">Сохранить</button>
                 <button class="btn btn--ghost" id="profile-cancel">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Profile Modal -->
+    <div class="modal" id="view-profile-modal">
+        <div class="modal__content">
+            <div class="modal__header">
+                <h2>Просмотр профиля</h2>
+                <button class="modal__close" id="view-profile-modal-close">&times;</button>
+            </div>
+            <div class="modal__body">
+                <div class="profile-form">
+                    <div class="form-group">
+                        <label>Имя пользователя:</label>
+                        <input type="text" id="view-profile-username" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" id="view-profile-email" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Настоящее имя:</label>
+                        <input type="text" id="view-profile-realname" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>О себе:</label>
+                        <textarea id="view-profile-description" readonly></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>День рождения:</label>
+                        <input type="text" id="view-profile-birthday" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button class="btn btn--ghost" id="view-profile-close">Закрыть</button>
             </div>
         </div>
     </div>

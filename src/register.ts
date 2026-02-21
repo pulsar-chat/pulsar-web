@@ -88,7 +88,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     window.location.href = '/client';
                 }, 800);
             } else {
-                showMessage(`Ошибка регистрации: ${rsp}`, true);
+                if (rsp === 'fail_username') {
+                    showMessage(`Ошибка регистрации: Аккаунт с этим именем уже существует`, true);
+                }
+                
             }
         } catch (err: any) {
             showMessage('Не удалось зарегистрироваться: ' + (err?.message || err), true);
