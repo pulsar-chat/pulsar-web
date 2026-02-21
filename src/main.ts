@@ -103,12 +103,7 @@ function initClient(username: string, connectNow: boolean = true) {
         }
         updateProfileName(currentUser);
 
-        if (contacts.size > 0) {
-            const firstContact = Array.from(contacts.values())[0];
-            await selectContact(firstContact.name);
-        } else {
-            updateChatTitle("Начните новый чат");
-        }
+        updateChatTitle("Начните новый чат");
     };
 
     cli.onClose = () => {
@@ -213,6 +208,21 @@ async function handleUnreadMessages(): Promise<void> {
     }
 }
 
+function updateChatContactInfo(contactName: string): void {
+    const contactInfoEl = document.getElementById('chat-contact-info');
+    if (!contactInfoEl) return;
+
+    const avatar = contactInfoEl.querySelector('.chat__contact-avatar') as HTMLElement;
+    const name = contactInfoEl.querySelector('.chat__contact-name') as HTMLElement;
+
+    if (avatar) {
+        avatar.textContent = contactName.charAt(0).toUpperCase();
+    }
+    if (name) {
+        name.textContent = contactName;
+    }
+}
+
 async function selectContact(contactName: string): Promise<void> {
     currentChat = contactName;
 
@@ -253,6 +263,7 @@ async function selectContact(contactName: string): Promise<void> {
 
     updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
     updateChatTitle(contactName);
+    updateChatContactInfo(contactName);
     focusTextarea();
 }
 
@@ -339,6 +350,11 @@ async function handleAutoLogin() {
                     updateProfileName(cookieUser);
                     updateChatTitle(cookieUser);
                     displayMessage("Автовход выполнен!", Math.floor(Date.now() / 1000), true);
+
+                    // Open menu on mobile devices
+                    if (window.innerWidth <= 768) {
+                        openMobileMenu();
+                    }
 
                     if (originalOnOpen) {
                         await originalOnOpen();
@@ -538,6 +554,75 @@ function updateClocks() {
 
     setInterval(helper, 1000);
 }
+
+// Mobile menu toggle functionality
+function toggleMobileMenu() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar && overlay) {
+        const isActive = sidebar.classList.contains('sidebar--active');
+        if (isActive) {
+            closeMobileMenu();
+        } else {
+            openMobileMenu();
+        }
+    }
+}
+
+function openMobileMenu() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar) sidebar.classList.add('sidebar--active');
+    if (overlay) overlay.classList.add('sidebar__overlay--active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeMobileMenu() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar) sidebar.classList.remove('sidebar--active');
+    if (overlay) overlay.classList.remove('sidebar__overlay--active');
+    document.body.style.overflow = '';
+}
+
+const menuToggle = document.getElementById('menu-toggle');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+if (menuToggle) {
+    menuToggle.addEventListener('click', toggleMobileMenu);
+}
+
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', closeMobileMenu);
+}
+
+// Close menu when a contact is clicked or action buttons are used
+document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    
+    // Close menu when selecting a contact
+    const contact = target.closest('.contact');
+    if (contact) {
+        closeMobileMenu();
+        return;
+    }
+    
+    // Close menu when logout button is clicked
+    if (target.id === 'logout-btn') {
+        closeMobileMenu();
+        return;
+    }
+
+    // Open profile when clicking on chat contact info in header
+    const chatContactInfo = target.closest('#chat-contact-info');
+    if (chatContactInfo && currentChat) {
+        viewProfile(currentChat);
+        return;
+    }
+});
 
 console.log("Pulsar Web Client initialized");
 handleAutoLogin();

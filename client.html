@@ -13,6 +13,7 @@
 
 <body>
     <div class="pulsar-app">
+        <div class="sidebar__overlay" id="sidebar-overlay"></div>
         <aside class="sidebar">
             <div class="sidebar__top">
                 <a class="logo" href="/">
@@ -57,7 +58,12 @@
         <main class="chat">
             <header class="chat__header">
                 <div class="chat__header-left">
+                    <button class="chat__menu-toggle" id="menu-toggle" title="Меню">☰</button>
                     <div class="chat__title">@user_home</div>
+                    <div class="chat__contact-info" id="chat-contact-info">
+                        <div class="chat__contact-avatar">@</div>
+                        <div class="chat__contact-name">@user_home</div>
+                    </div>
                 </div>
                 <div class="chat__header-right">
                     <div class="chat__avatar"></div>
