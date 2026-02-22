@@ -161,6 +161,13 @@
     text-align: center;
 }
 
+/* Channel styles */
+.contact--channel .contact__avatar {
+    background: rgba(108, 124, 255, 0.2);
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
 .sidebar__footer {
     padding: 12px;
     border-top: 1px solid var(--color-border);
@@ -909,4 +916,117 @@
 .form-group textarea {
     min-height: 100px;
     resize: vertical;
+}
+
+/* Mobile Touch Optimization */
+@media (max-width: 768px) {
+    /* Ensure minimum touch target size (48px) */
+    .btn {
+        min-height: 48px;
+        min-width: 48px;
+    }
+
+    .contact {
+        min-height: 56px;
+    }
+
+    .contact__avatar {
+        min-width: 48px;
+        min-height: 48px;
+    }
+
+    .chat__send {
+        min-height: 48px;
+        min-width: 48px;
+    }
+
+    .modal__content {
+        border-radius: 16px;
+        max-height: 95vh;
+    }
+
+    .modal__header {
+        padding: 16px;
+    }
+
+    .modal__body {
+        padding: 16px;
+    }
+
+    .modal__footer {
+        padding: 16px;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        font-size: 16px;
+        padding: 12px;
+    }
+
+    .profile-form {
+        gap: 12px;
+    }
+
+    /* Improve readability on small screens */
+    .contact__name {
+        font-size: 15px;
+    }
+
+    .contact__last {
+        font-size: 13px;
+    }
+
+    /* Better button spacing on mobile */
+    .btn--ghost {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 8px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+
+    .chat__textarea {
+        font-size: 16px;
+    }
+
+    .modal__content {
+        width: 95%;
+    }
+
+    .contact {
+        min-height: 52px;
+    }
+
+    .contact__avatar {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .contact__meta {
+        flex: 1;
+    }
+
+    .form-group {
+        gap: 6px;
+    }
+
+    .profile-form {
+        gap: 10px;
+    }
+
+    /* Prevent zoom on input focus */
+    input, textarea, select {
+        font-size: 16px !important;
+    }
 }

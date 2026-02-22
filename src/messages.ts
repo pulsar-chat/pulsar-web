@@ -142,3 +142,29 @@ export function clearContactHistory(
 export function clearAllHistory(messageHistory: Map<string, Message[]>): void {
     messageHistory.clear();
 }
+
+/**
+ * Загружает только последнее сообщение у контакта
+ */
+export async function fetchLastMessageFromServer(
+    cli: PulsarClient,
+    contactName: string
+): Promise<Message | null> {
+    try {
+        const cmd = `!chat ${contactName} 1`;
+        const rsp = await cli.requestRaw(cmd);
+
+        if (!rsp || rsp === '-') {
+            return null;
+        }
+
+        const trimmed = rsp.trim();
+        if (!trimmed) return null;
+
+        const message = Message.fromPayload(trimmed);
+        return message;
+    } catch (err) {
+        console.warn(`Failed to fetch last message for ${contactName}:`, err);
+        return null;
+    }
+}

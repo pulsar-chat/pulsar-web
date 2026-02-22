@@ -23,7 +23,8 @@ export function loadContactsFromStorage(): Map<string, Contact> {
                     name: contact.name,
                     lastMessage: contact.lastMessage,
                     lastTime: contact.lastTime,
-                    unread: contact.unread
+                    unread: contact.unread,
+                    contactType: 'user' // По умолчанию восстанавливаем как user, так как тип не сохраняется
                 });
             }
         } catch (e) {
