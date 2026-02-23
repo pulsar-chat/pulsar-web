@@ -18,12 +18,17 @@ import {
     removeContactFromServer,
     updateContactLastMessage,
     incrementUnread,
-    clearUnread
+    clearUnread,
+    getContactType,
+    createChannelOnServer,
+    joinChannelOnServer,
+    leaveChannelOnServer
 } from "./contacts";
 import {
     fetchMessageHistoryFromServer,
     fetchUnreadMessagesFromServer,
-    fetchMessageByIdFromServer
+    fetchMessageByIdFromServer,
+    fetchLastMessageFromServer
 } from "./messages";
 import {
     initUIElements,
@@ -44,7 +49,8 @@ import {
     clearNewChatUsername,
     getContactSearchQuery,
     openViewProfileModal,
-    closeViewProfileModal
+    closeViewProfileModal,
+    optimizeMessagesDisplay
 } from "./ui";
 import {
     loadUserProfileFromServer,
@@ -142,10 +148,10 @@ function initClient(username: string, connectNow: boolean = true) {
 
         addMessageToHistory(messageHistory, relevantChat, msg);
 
-        updateContactLastMessage(contacts, relevantChat, content, timestamp);
+        updateContactLastMessage(contacts, relevantChat, content, timestamp, sender);
 
         if (sender === currentChat || receiver === currentChat) {
-            displayMessage(content, timestamp, sender === currentUser);
+            displayMessage(content, timestamp, sender === currentUser, sender);
             console.log(`Message from ${sender}: ${content}`);
         } else {
             incrementUnread(contacts, relevantChat);
@@ -168,7 +174,18 @@ async function loadContacts(): Promise<void> {
 
         for (const contactName of serverContacts) {
             if (!contacts.has(contactName)) {
-                addContact(contacts, contactName);
+                const type = getContactType(contactName);
+                addContact(contacts, contactName, type);
+            }
+
+            // Загружаем последнее сообщение для каждого контакта
+            try {
+                const lastMsg = await fetchLastMessageFromServer(cli, contactName);
+                if (lastMsg) {
+                    updateContactLastMessage(contacts, contactName, lastMsg.getContent(), lastMsg.getTime(), lastMsg.getSender());
+                }
+            } catch (err) {
+                console.warn(`Failed to load last message for ${contactName}:`, err);
             }
         }
 
@@ -216,7 +233,12 @@ function updateChatContactInfo(contactName: string): void {
     const name = contactInfoEl.querySelector('.chat__contact-name') as HTMLElement;
 
     if (avatar) {
-        avatar.textContent = contactName.charAt(0).toUpperCase();
+        // Для каналов показываем #, для пользователей - вторую букву имени
+        if (contactName.startsWith(':')) {
+            avatar.textContent = '#';
+        } else {
+            avatar.textContent = contactName.charAt(1) || '@';
+        }
     }
     if (name) {
         name.textContent = contactName;
@@ -242,7 +264,7 @@ async function selectContact(contactName: string): Promise<void> {
             // Отображаем сообщения
             for (const msg of serverMessages) {
                 const isOwn = msg.getSender() === currentUser;
-                displayMessage(msg.getContent(), msg.getTime(), isOwn);
+                displayMessage(msg.getContent(), msg.getTime(), isOwn, msg.getSender());
             }
         } catch (err) {
             console.error('Failed to load message history:', err);
@@ -255,7 +277,7 @@ async function selectContact(contactName: string): Promise<void> {
         const reversedMsgs = [...msgs].reverse();
         for (const msg of reversedMsgs) {
             const isOwn = msg.getSender() === currentUser;
-            displayMessage(msg.getContent(), msg.getTime(), isOwn);
+            displayMessage(msg.getContent(), msg.getTime(), isOwn, msg.getSender());
         }
     }
 
@@ -265,6 +287,9 @@ async function selectContact(contactName: string): Promise<void> {
     updateChatTitle(contactName);
     updateChatContactInfo(contactName);
     focusTextarea();
+    
+    // Оптимизируем отображение на мобильных устройствах
+    optimizeMessagesDisplay();
 }
 
 async function viewProfile(contactName: string): Promise<void> {
@@ -280,8 +305,8 @@ async function viewProfile(contactName: string): Promise<void> {
 }
 
 async function startNewChat(username: string): Promise<void> {
-    if (!username || !username.startsWith('@')) {
-        updateChatTitle('Имя должно начинаться с @');
+    if (!username || (!username.startsWith('@') && !username.startsWith(':'))) {
+        updateChatTitle('Имя должно начинаться с @ или :');
         return;
     }
 
@@ -291,7 +316,20 @@ async function startNewChat(username: string): Promise<void> {
     }
 
     if (!contacts.has(username)) {
-        addContact(contacts, username);
+        const type = getContactType(username);
+        addContact(contacts, username, type);
+
+        // Пытаемся загрузить последнее сообщение
+        if (cli) {
+            try {
+                const lastMsg = await fetchLastMessageFromServer(cli, username);
+                if (lastMsg) {
+                    updateContactLastMessage(contacts, username, lastMsg.getContent(), lastMsg.getTime(), lastMsg.getSender());
+                }
+            } catch (err) {
+                console.warn(`Failed to load last message for ${username}:`, err);
+            }
+        }
     }
 
     clearNewChatUsername();
@@ -300,29 +338,51 @@ async function startNewChat(username: string): Promise<void> {
     saveChatDataWithDelay();
 }
 
-async function addContactViaServer(username: string): Promise<void> {
+async function addContactViaServer(contactName: string): Promise<void> {
     if (!cli) {
         updateChatTitle('Клиент не инициализирован');
         return;
     }
 
-    if (!username || !username.startsWith('@')) {
-        updateChatTitle('Имя должно начинаться с @');
+    if (!contactName || (!contactName.startsWith('@') && !contactName.startsWith(':'))) {
+        updateChatTitle('Имя должно начинаться с @ или :');
         return;
     }
 
-    if (username === currentUser) {
+    if (contactName === currentUser) {
         updateChatTitle('Нельзя добавить самого себя');
         return;
     }
 
     try {
-        const success = await addContactToServer(cli, username);
+        const isChannel = contactName.startsWith(':');
+        let success = false;
+
+        if (isChannel) {
+            // Для каналов: присоединяемся к каналу
+            success = await joinChannelOnServer(cli, contactName);
+        } else {
+            // Для пользователей: добавляем контакт
+            success = await addContactToServer(cli, contactName);
+        }
+
         if (success) {
-            addContact(contacts, username);
+            const type = getContactType(contactName);
+            addContact(contacts, contactName, type);
+
+            // Загружаем последнее сообщение
+            try {
+                const lastMsg = await fetchLastMessageFromServer(cli, contactName);
+                if (lastMsg) {
+                    updateContactLastMessage(contacts, contactName, lastMsg.getContent(), lastMsg.getTime(), lastMsg.getSender());
+                }
+            } catch (err) {
+                console.warn(`Failed to load last message for ${contactName}:`, err);
+            }
+
             updateContactsListUI(contacts, currentChat, selectContact, viewProfile);
             saveChatDataWithDelay();
-            updateChatTitle(`Контакт ${username} добавлен!`);
+            updateChatTitle(`${isChannel ? 'Канал' : 'Контакт'} ${contactName} добавлен!`);
         } else {
             updateChatTitle(`Ошибка при добавлении контакта`);
         }

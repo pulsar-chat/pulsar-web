@@ -27,9 +27,9 @@ export async function fetchContactsFromServer(cli: PulsarClient): Promise<string
 /**
  * Добавляет новый контакт к списку контактов
  */
-export function addContact(contacts: Map<string, Contact>, contactName: string): void {
+export function addContact(contacts: Map<string, Contact>, contactName: string, contactType: 'user' | 'channel' = 'user'): void {
     if (!contacts.has(contactName)) {
-        contacts.set(contactName, { name: contactName });
+        contacts.set(contactName, { name: contactName, contactType });
     }
 }
 
@@ -74,12 +74,16 @@ export function updateContactLastMessage(
     contacts: Map<string, Contact>,
     contactName: string,
     message: string,
-    timestamp: number
+    timestamp: number,
+    sender?: string
 ): void {
     if (contacts.has(contactName)) {
         const contact = contacts.get(contactName)!;
         contact.lastMessage = message;
         contact.lastTime = timestamp;
+        if (sender) {
+            contact.lastSender = sender;
+        }
     }
 }
 
@@ -122,3 +126,59 @@ export function getSortedContacts(
         .filter(c => c.name.toLowerCase().includes(query))
         .sort((a, b) => (b.lastTime || 0) - (a.lastTime || 0));
 }
+
+/**
+ * Определяет тип контакта по имени
+ */
+export function getContactType(contactName: string): 'user' | 'channel' {
+    return contactName.startsWith(':') ? 'channel' : 'user';
+}
+
+/**
+ * Создает канал на сервере
+ */
+export async function createChannelOnServer(
+    cli: PulsarClient,
+    channelName: string
+): Promise<boolean> {
+    try {
+        const rsp = await cli.requestRaw(`!create ${channelName}`);
+        return rsp === '+';
+    } catch (err) {
+        console.error('Failed to create channel:', err);
+        return false;
+    }
+}
+
+/**
+ * Присоединяется к каналу на сервере
+ */
+export async function joinChannelOnServer(
+    cli: PulsarClient,
+    channelName: string
+): Promise<boolean> {
+    try {
+        const rsp = await cli.requestRaw(`!join ${channelName}`);
+        return rsp === '+';
+    } catch (err) {
+        console.error('Failed to join channel:', err);
+        return false;
+    }
+}
+
+/**
+ * Выходит из канала на сервере
+ */
+export async function leaveChannelOnServer(
+    cli: PulsarClient,
+    channelName: string
+): Promise<boolean> {
+    try {
+        const rsp = await cli.requestRaw(`!leave ${channelName}`);
+        return rsp === '+';
+    } catch (err) {
+        console.error('Failed to leave channel:', err);
+        return false;
+    }
+}
+

@@ -98,6 +98,9 @@ a {
     font-weight: 500;
     border: 1px solid transparent;
     cursor: pointer;
+    transition: all 0.2s ease;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .btn--primary {
@@ -142,6 +145,9 @@ textarea {
     font-family: inherit;
     font-size: 0.95rem;
     transition: border-color 0.2s;
+    -webkit-appearance: none;
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 input[type="text"]:focus,
@@ -392,7 +398,7 @@ textarea::placeholder {
     }
 
     .header__actions {
-        flex-direction: column;
+        flex-direction: row;
         gap: 8px;
     }
 

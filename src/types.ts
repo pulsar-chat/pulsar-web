@@ -1,10 +1,16 @@
 import Message from "./message";
 
+export type ContactType = 'user' | 'channel';
+
 export interface Contact {
     name: string;
+    contactType: ContactType;
     lastMessage?: string;
     lastTime?: number;
+    lastSender?: string;
     unread?: number;
+    description?: string;
+    memberCount?: number;
 }
 
 export interface UserProfile {

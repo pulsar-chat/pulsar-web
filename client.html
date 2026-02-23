@@ -3,7 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="true">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pulsar">
+    <meta name="theme-color" content="#0f1220">
     <title>Pulsar Client</title>
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/client.css">
@@ -32,7 +36,7 @@
                 </div>
                 <div class="contacts__new-chat">
                     <input type="text" id="new-chat-username" class="contacts__new-chat-input"
-                        placeholder="@username для нового чата">
+                        placeholder="@user или :channel">
                     <button class="btn btn--primary btn--small" id="new-chat-btn" title="Начать чат">↓</button>
                 </div>
                 <div class="contacts" id="contacts-list">
@@ -41,7 +45,7 @@
             </div>
 
             <div class="sidebar__footer">
-                <div class="profile" id="profile-btn">
+                <div class="profile profile__btn" id="profile-btn">
                     <div class="profile__avatar">@</div>
                     <div class="profile__info">
                         <div class="profile__name" id="profile-name">@browser</div>
@@ -49,7 +53,6 @@
                     </div>
                 </div>
                 <div class="sidebar__actions">
-                    <button type="button" class="btn btn--ghost" id="settings-btn" title="Параметры">⚙</button>
                     <button type="button" class="btn btn--ghost" id="logout-btn" title="Выход">Выход</button>
                 </div>
             </div>
@@ -74,7 +77,7 @@
             </section>
 
             <form class="chat__input" onsubmit="return false;">
-                <textarea class="chat__textarea" placeholder="Write a message..."></textarea>
+                <textarea class="chat__textarea" placeholder="Напишите сообщение..."></textarea>
                 <button class="btn btn--primary chat__send">➤</button>
             </form>
         </main>

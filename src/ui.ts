@@ -71,7 +71,7 @@ export function escapeHtml(text: string): string {
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
-export function displayMessage(content: string, time: number, isOwn: boolean = false): void {
+export function displayMessage(content: string, time: number, isOwn: boolean = false, sender?: string): void {
     const messagesContainer = getUIElement('messagesContainer');
     if (!messagesContainer) return;
 
@@ -81,7 +81,14 @@ export function displayMessage(content: string, time: number, isOwn: boolean = f
     const timestamp = new Date(time * 1000).toLocaleTimeString();
     const msgBubble = document.createElement('div');
     msgBubble.className = 'msg__bubble';
-    msgBubble.innerHTML = `${escapeHtml(content)}<br><span class="msg__time">${timestamp}</span>`;
+    
+    let messageHTML = `${escapeHtml(content)}<br><span class="msg__time">`;
+    if (sender && !isOwn) {
+        messageHTML += `${escapeHtml(sender)} • `;
+    }
+    messageHTML += `${timestamp}</span>`;
+    
+    msgBubble.innerHTML = messageHTML;
 
     msgDiv.appendChild(msgBubble);
     messagesContainer.appendChild(msgDiv);
@@ -100,6 +107,31 @@ export function clearMessagesUI(): void {
     const messagesContainer = getUIElement('messagesContainer');
     if (messagesContainer) {
         messagesContainer.innerHTML = '';
+    }
+}
+
+/**
+ * Оптимизирует производительность отображения сообщений на мобильных
+ * Скрывает старые сообщения, если их слишком много
+ */
+export function optimizeMessagesDisplay(): void {
+    const messagesContainer = getUIElement('messagesContainer');
+    if (!messagesContainer) return;
+
+    const messages = messagesContainer.querySelectorAll('.msg') as NodeListOf<HTMLDivElement>;
+    const MAX_VISIBLE = window.innerWidth < 768 ? 100 : 200;
+
+    // Если сообщений больше, чем максимум, скрываем старые
+    if (messages.length > MAX_VISIBLE) {
+        const messagesToHide = messages.length - MAX_VISIBLE;
+        for (let i = 0; i < messagesToHide; i++) {
+            messages[i].style.display = 'none';
+        }
+    } else {
+        // Показываем все сообщения, если их меньше максимума
+        messages.forEach(msg => {
+            msg.style.display = '';
+        });
     }
 }
 
@@ -124,13 +156,23 @@ export function updateContactsListUI(
         const lastMsg = contact.lastMessage || 'Нет сообщений';
         const unreadBadge = contact.unread ?
             `<span class="contact__badge">${contact.unread}</span>` : '';
+        
+        // Определяем иконку для аватара в зависимости от типа контакта
+        const avatarIcon = contact.contactType === 'channel' ? '#' : contact.name[1] || '@';
+
+        // Форматируем последнее сообщение с информацией об отправителе
+        let lastMsgDislay = escapeHtml(lastMsg.substring(0, 30));
+        if (contact.lastSender && contact.contactType === 'channel') {
+            // Для каналов показываем отправителя
+            lastMsgDislay = `${escapeHtml(contact.lastSender)}: ${lastMsgDislay}`;
+        }
 
         html += `
-            <div class="contact${isActive}" data-contact="${contact.name}">
-                <div class="contact__avatar">${contact.name[1] || '@'}</div>
+            <div class="contact${isActive} contact--${contact.contactType}" data-contact="${contact.name}">
+                <div class="contact__avatar">${avatarIcon}</div>
                 <div class="contact__meta">
                     <div class="contact__name">${escapeHtml(contact.name)}</div>
-                    <div class="contact__last">${escapeHtml(lastMsg.substring(0, 30))}</div>
+                    <div class="contact__last">${lastMsgDislay}</div>
                 </div>
                 ${unreadBadge}
             </div>
@@ -159,7 +201,7 @@ export function updateContactsListUI(
         const handleProfileClick = (e: Event) => {
             e.stopPropagation();
             const contactName = el.getAttribute('data-contact');
-            if (contactName) {
+            if (contactName && contactName.startsWith('@')) {
                 onProfileClick(contactName);
             }
         };
