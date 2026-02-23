@@ -398,7 +398,7 @@ textarea::placeholder {
     }
 
     .header__actions {
-        flex-direction: column;
+        flex-direction: row;
         gap: 8px;
     }
 
