@@ -76,12 +76,17 @@
             <section class="chat__messages" id="messages">
             </section>
 
-            <form class="chat__input" id="message-form" onsubmit="return false;">
+            <!-- input area is not a form anymore to avoid default submission behavior -->
+            <div class="chat__input" id="message-input-container">
+                <!-- attachment previews will appear here -->
+                <div class="chat__attachments" id="chat-attachments"></div>
+
                 <textarea class="chat__textarea" placeholder="Напишите сообщение..."></textarea>
                 <input type="file" id="fileInput" hidden multiple>
-                <label for="fileInput" class="btn btn--primary chat__send">📎</label>
-                <button class="btn btn--primary chat__send">➤</button>
-            </form>
+                <label for="fileInput" class="btn btn--primary chat__attach" title="Прикрепить файлы">📎</label>
+                <!-- send button has its own id and type to avoid confusion with the label -->
+                <button type="button" id="send-btn" class="btn btn--primary chat__send" title="Отправить">➤</button>
+            </div>
         </main>
     </div>
 

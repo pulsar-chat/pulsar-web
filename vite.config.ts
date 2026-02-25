@@ -19,6 +19,19 @@ export default defineConfig({
             key: fs.readFileSync('localhost+2-key.pem'),
             cert: fs.readFileSync('localhost+2.pem')
         },
-        host: 'localhost'
+        host: 'localhost',
+        proxy: {
+            '/upload': {
+                target: 'https://pulsar-chat.ru',
+                changeOrigin: true,
+                secure: true
+            },
+
+            '/storage': {
+                target: 'https://pulsar-chat.ru',
+                changeOrigin: true,
+                secure: true
+            }
+        }
     }
 });

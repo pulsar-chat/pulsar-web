@@ -338,6 +338,51 @@
     resize: vertical;
 }
 
+/* attachments preview area inside chat input */
+.chat__attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--color-text);
+}
+
+.attachment-item .remove-file {
+    margin-left: 6px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+/* differentiate attach button icon from send button */
+.chat__attach {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat__input.drag-over {
+    border: 2px dashed var(--color-primary);
+}
+
+.chat__send {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+}
+
 .chat__send {
     width: 48px;
     height: 48px;

@@ -8,8 +8,7 @@ This project is a web application built using HTML and TypeScript, specifically 
 - **Services**: Services are used to manage data flow and communication between components.
 
 ## Developer Workflows
-- **Building**: Use `npm run build` to compile the TypeScript code into JavaScript.
-- **Testing**: Run tests using `npm run test` to ensure code quality and functionality.
+- DO NOT USE ANY COMMANDS IN TERMINAL
 
 ## Project Conventions
 - Follow TypeScript conventions for coding standards.
