@@ -15,6 +15,7 @@ const uiElements = {
     profileSaveBtn: null as HTMLButtonElement | null,
     profileCancelBtn: null as HTMLButtonElement | null,
     profileName: null as HTMLDivElement | null,
+    profileBtn: null as HTMLDivElement | null,
     contactSearch: null as HTMLInputElement | null,
     newChatUsername: null as HTMLInputElement | null,
     newChatBtn: null as HTMLButtonElement | null,
