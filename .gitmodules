@@ -1,0 +1,3 @@
+[submodule "pf-web"]
+	path = pf-web
+	url = https://github.com/MalyshevMS/pf-web.git
