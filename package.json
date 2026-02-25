@@ -27,6 +27,7 @@
   "homepage": "https://github.com/pulsar-chat/pulsar-web#readme",
   "dependencies": {
     "@vitest/coverage-v8": "^4.0.18",
+    "pf-web": "file:pf-web",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"

@@ -71,6 +71,42 @@ export function escapeHtml(text: string): string {
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
+
+// helper used by displayMessage to determine how to render a single file tag
+function renderFilePreview(url: string): string {
+    // simple extension-based mime detection
+    const lower = url.toLowerCase();
+    const imageExt = /(\.jpe?g|\.png|\.gif|\.webp|\.bmp|\.svg)$/i;
+    const videoExt = /(\.mp4|\.webm|\.ogg)$/i;
+
+    if (imageExt.test(lower)) {
+        return `<div class="file-preview-wrapper"><img src="${escapeHtml(url)}" class="file-preview" /></div>`;
+    } else if (videoExt.test(lower)) {
+        return `<div class="file-preview-wrapper"><video controls src="${escapeHtml(url)}" class="file-preview"></video></div>`;
+    } else {
+        // fallback link
+        return `<div class="file-preview-wrapper"><a href="${escapeHtml(url)}" download="" class="file-download">Скачать файл</a></div>`;
+    }
+}
+
+// parses content and replaces any [FILE:url] tags with appropriate html
+function parseContentWithFiles(content: string): string {
+    const fileRegex = /\[FILE:([^\]]+)\]/g;
+    let result = '';
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = fileRegex.exec(content)) !== null) {
+        result += escapeHtml(content.slice(lastIndex, match.index));
+        const url = match[1];
+        result += renderFilePreview(url);
+        lastIndex = fileRegex.lastIndex;
+    }
+
+    result += escapeHtml(content.slice(lastIndex));
+    return result;
+}
+
 export function displayMessage(content: string, time: number, isOwn: boolean = false, sender?: string): void {
     const messagesContainer = getUIElement('messagesContainer');
     if (!messagesContainer) return;
@@ -82,7 +118,8 @@ export function displayMessage(content: string, time: number, isOwn: boolean = f
     const msgBubble = document.createElement('div');
     msgBubble.className = 'msg__bubble';
     
-    let messageHTML = `${escapeHtml(content)}<br><span class="msg__time">`;
+    // build the main html including parsed file blocks
+    let messageHTML = parseContentWithFiles(content) + '<br><span class="msg__time">';
     if (sender && !isOwn) {
         messageHTML += `${escapeHtml(sender)} • `;
     }
@@ -95,6 +132,7 @@ export function displayMessage(content: string, time: number, isOwn: boolean = f
 
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
+
 
 export function updateChatTitle(status: string): void {
     const chatTitle = getUIElement('chatTitle');

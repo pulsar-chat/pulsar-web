@@ -70,6 +70,12 @@ export async function removeContactFromServer(
 /**
  * Обновляет информацию о последнем сообщении контакта
  */
+// strip out any [FILE:url] system tags so the contact list shows a readable summary
+function sanitizeLastMessage(message: string): string {
+    const stripped = message.replace(/\[FILE:[^\]]+\]/g, '').trim();
+    return stripped || '📎 файл';
+}
+
 export function updateContactLastMessage(
     contacts: Map<string, Contact>,
     contactName: string,
@@ -79,7 +85,7 @@ export function updateContactLastMessage(
 ): void {
     if (contacts.has(contactName)) {
         const contact = contacts.get(contactName)!;
-        contact.lastMessage = message;
+        contact.lastMessage = sanitizeLastMessage(message);
         contact.lastTime = timestamp;
         if (sender) {
             contact.lastSender = sender;

@@ -52,6 +52,7 @@ import {
     closeViewProfileModal,
     optimizeMessagesDisplay
 } from "./ui";
+import { uploadFile } from './files';
 import {
     loadUserProfileFromServer,
     saveProfileToServer,
@@ -66,7 +67,7 @@ let cli: PulsarClient | null = null;
 let contacts: Map<string, Contact> = new Map();
 let messageHistory: Map<string, Message[]> = new Map();
 let userProfile: UserProfile = {};
-let savingTimeout: number | null = null;
+let savingTimeout: NodeJS.Timeout | null = null;
 
 function saveChatDataWithDelay(): void {
     if (savingTimeout) {
@@ -470,15 +471,47 @@ async function handleSaveProfile() {
     }
 }
 
+
 const sendBtn = getUIElement('sendBtn');
 const textarea = getUIElement('textarea');
 
+// when the user picks files we adjust the input placeholder so they know attachments are pending
+const fileInputElement = document.getElementById('fileInput') as HTMLInputElement | null;
+if (fileInputElement && textarea) {
+    fileInputElement.addEventListener('change', () => {
+        const count = fileInputElement.files ? fileInputElement.files.length : 0;
+        textarea.placeholder = count > 0 ? `Прикреплено файлов: ${count}` : 'Напишите сообщение...';
+    });
+}
+
+// exposed for testing
+export async function buildMessageWithFiles(text: string, files: File[]): Promise<string> {
+    let prefix = '';
+    for (const file of files) {
+        const result = await uploadFile(file);
+        if (result && typeof result.url === 'string') {
+            prefix += `[FILE:${result.url}]`;
+        }
+    }
+    // make sure we don't exceed 1023 characters total; trim the text portion if necessary
+    const maxMsgLen = 1023;
+    if (prefix.length + text.length > maxMsgLen) {
+        text = text.slice(0, maxMsgLen - prefix.length);
+    }
+    return prefix + text;
+}
+
 if (sendBtn && textarea) {
     sendBtn.addEventListener('click', async () => {
-        const message = getTextareaValue().trim().slice(0, 1023);
-        if (!message || !cli) return;
+        const raw = getTextareaValue().trim().slice(0, 1023);
+        const fileInput = document.getElementById('fileInput') as HTMLInputElement | null;
+        const files: File[] = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
+        // don't send empty message unless there are files attached
+        if (!raw && files.length === 0) return;
+        if (!cli) return;
 
         try {
+            const message = await buildMessageWithFiles(raw, files);
             cli.send(message, currentChat);
 
             const msg = new Message(
@@ -493,6 +526,11 @@ if (sendBtn && textarea) {
             displayMessage(message, Math.floor(Date.now() / 1000), true);
             clearTextarea();
             focusTextarea();
+            if (fileInput) {
+                fileInput.value = '';
+                // restore textarea placeholder after attachments cleared
+                if (textarea) textarea.placeholder = 'Напишите сообщение...';
+            }
 
             saveChatDataWithDelay();
         } catch (err) {
