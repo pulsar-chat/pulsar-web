@@ -6,9 +6,9 @@ const uiElements = {
     messagesContainer: null as HTMLDivElement | null,
     textarea: null as HTMLTextAreaElement | null,
     sendBtn: null as HTMLButtonElement | null,
+    attachmentsContainer: null as HTMLDivElement | null,
     chatTitle: null as HTMLDivElement | null,
     contactsList: null as HTMLDivElement | null,
-    profileBtn: null as HTMLDivElement | null,
     logoutBtn: null as HTMLButtonElement | null,
     profileModal: null as HTMLDivElement | null,
     profileModalClose: null as HTMLButtonElement | null,
@@ -32,7 +32,8 @@ const uiElements = {
 export function initUIElements(): void {
     uiElements.messagesContainer = document.getElementById('messages') as HTMLDivElement;
     uiElements.textarea = document.querySelector('.chat__textarea') as HTMLTextAreaElement;
-    uiElements.sendBtn = document.querySelector('.chat__send') as HTMLButtonElement;
+    uiElements.sendBtn = document.getElementById('send-btn') as HTMLButtonElement;
+    uiElements.attachmentsContainer = document.getElementById('chat-attachments') as HTMLDivElement;
     uiElements.chatTitle = document.querySelector('.chat__title') as HTMLDivElement;
     uiElements.contactsList = document.getElementById('contacts-list') as HTMLDivElement;
     uiElements.profileBtn = document.getElementById('profile-btn') as HTMLDivElement;

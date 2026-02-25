@@ -67,7 +67,74 @@ let cli: PulsarClient | null = null;
 let contacts: Map<string, Contact> = new Map();
 let messageHistory: Map<string, Message[]> = new Map();
 let userProfile: UserProfile = {};
-let savingTimeout: NodeJS.Timeout | null = null;
+let savingTimeout: any | null = null;
+
+// current set of files pending to be sent as attachments
+let attachments: File[] = [];
+
+// update textarea placeholder depending on attachments count
+export function updateTextareaPlaceholder(): void {
+    const textareaEl = getUIElement('textarea') as HTMLTextAreaElement | null;
+    if (!textareaEl) return;
+    if (attachments.length > 0) {
+        textareaEl.placeholder = `Прикреплено файлов: ${attachments.length}`;
+    } else {
+        textareaEl.placeholder = 'Напишите сообщение...';
+    }
+}
+
+// render the attachments list in UI
+function updateAttachmentsUI(): void {
+    const container = getUIElement('attachmentsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    attachments.forEach((file, idx) => {
+        const item = document.createElement('div');
+        item.className = 'attachment-item';
+        item.textContent = file.name;
+        const remove = document.createElement('span');
+        remove.className = 'remove-file';
+        remove.textContent = '×';
+        remove.title = 'Удалить файл';
+        remove.addEventListener('click', () => {
+            removeAttachment(idx);
+        });
+        item.appendChild(remove);
+        container.appendChild(item);
+    });
+    updateTextareaPlaceholder();
+}
+
+export function addFilesToAttachments(newFiles: File[]): void {
+    // append while avoiding duplicates (same name+size)
+    for (const f of newFiles) {
+        const exists = attachments.some(a => a.name === f.name && a.size === f.size && a.lastModified === f.lastModified);
+        if (!exists) attachments.push(f);
+    }
+    updateAttachmentsUI();
+}
+
+// helpers for testing
+export function getAttachments(): File[] {
+    return attachments;
+}
+
+export function clearAttachments(): void {
+    attachments = [];
+    updateAttachmentsUI();
+}
+
+export function removeAttachment(index: number): void {
+    if (index < 0 || index >= attachments.length) return;
+    attachments.splice(index, 1);
+    updateAttachmentsUI();
+}
+
+// accept files from a FileList or array
+function handleFilesInput(files: FileList | File[]): void {
+    const arr: File[] = files instanceof FileList ? Array.from(files) : files;
+    addFilesToAttachments(arr);
+}
 
 function saveChatDataWithDelay(): void {
     if (savingTimeout) {
@@ -475,14 +542,20 @@ async function handleSaveProfile() {
 const sendBtn = getUIElement('sendBtn');
 const textarea = getUIElement('textarea');
 
-// when the user picks files we adjust the input placeholder so they know attachments are pending
+// when the user picks files we add them to the attachment list
 const fileInputElement = document.getElementById('fileInput') as HTMLInputElement | null;
 if (fileInputElement && textarea) {
     fileInputElement.addEventListener('change', () => {
-        const count = fileInputElement.files ? fileInputElement.files.length : 0;
-        textarea.placeholder = count > 0 ? `Прикреплено файлов: ${count}` : 'Напишите сообщение...';
+        if (fileInputElement.files) {
+            handleFilesInput(fileInputElement.files);
+            // clear file input since we now keep files separately
+            fileInputElement.value = '';
+        }
     });
 }
+
+// make sure UI matches current (initially empty) attachments list
+updateAttachmentsUI();
 
 // exposed for testing
 export async function buildMessageWithFiles(text: string, files: File[]): Promise<string> {
@@ -504,14 +577,12 @@ export async function buildMessageWithFiles(text: string, files: File[]): Promis
 if (sendBtn && textarea) {
     sendBtn.addEventListener('click', async () => {
         const raw = getTextareaValue().trim().slice(0, 1023);
-        const fileInput = document.getElementById('fileInput') as HTMLInputElement | null;
-        const files: File[] = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
         // don't send empty message unless there are files attached
-        if (!raw && files.length === 0) return;
+        if (!raw && attachments.length === 0) return;
         if (!cli) return;
 
         try {
-            const message = await buildMessageWithFiles(raw, files);
+            const message = await buildMessageWithFiles(raw, attachments);
             cli.send(message, currentChat);
 
             const msg = new Message(
@@ -526,11 +597,13 @@ if (sendBtn && textarea) {
             displayMessage(message, Math.floor(Date.now() / 1000), true);
             clearTextarea();
             focusTextarea();
-            if (fileInput) {
-                fileInput.value = '';
-                // restore textarea placeholder after attachments cleared
-                if (textarea) textarea.placeholder = 'Напишите сообщение...';
-            }
+
+            // reset attachments
+            attachments = [];
+            updateAttachmentsUI();
+
+            // if file input exists clear value as well just in case
+            if (fileInputElement) fileInputElement.value = '';
 
             saveChatDataWithDelay();
         } catch (err) {
@@ -651,6 +724,25 @@ function updateClocks() {
     helper();
 
     setInterval(helper, 1000);
+}
+
+// allow dragging files into the input area
+const messageInputContainer = document.getElementById('message-input-container');
+if (messageInputContainer) {
+    messageInputContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        messageInputContainer.classList.add('drag-over');
+    });
+    messageInputContainer.addEventListener('dragleave', () => {
+        messageInputContainer.classList.remove('drag-over');
+    });
+    messageInputContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        messageInputContainer.classList.remove('drag-over');
+        if (e.dataTransfer && e.dataTransfer.files) {
+            handleFilesInput(e.dataTransfer.files);
+        }
+    });
 }
 
 // Mobile menu toggle functionality
