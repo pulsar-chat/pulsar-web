@@ -76,8 +76,10 @@
             <section class="chat__messages" id="messages">
             </section>
 
-            <form class="chat__input" onsubmit="return false;">
+            <form class="chat__input" id="message-form" onsubmit="return false;">
                 <textarea class="chat__textarea" placeholder="Напишите сообщение..."></textarea>
+                <input type="file" id="fileInput" hidden multiple>
+                <label for="fileInput" class="btn btn--primary chat__send">📎</label>
                 <button class="btn btn--primary chat__send">➤</button>
             </form>
         </main>

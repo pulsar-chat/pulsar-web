@@ -808,6 +808,22 @@
     }
 }
 
+.file-preview-wrapper {
+    margin: 8px 0;
+}
+
+.file-preview {
+    max-width: 200px;
+    max-height: 200px;
+    display: block;
+    border-radius: 8px;
+}
+
+.file-download {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
 /* Modal Styles */
 .modal {
     display: none;
